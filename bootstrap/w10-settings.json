@@ -9,36 +9,24 @@
                      {
                          "program":  "dotnet",
                          "name":  "dotNet Framework 3.5 (include dotNet 2.5 and 3.0)",
-                         "installation":  true,
+                         "installation":  false,
                          "default":  true
                      },
                      {
                          "program":  "github-desktop",
                          "name":  "GitHub Desktop",
-                         "installation":  true,
+                         "installation":  false,
                          "default":  true
                      },
                      {
-                        "program":  "vscode",
-                        "name":  "VSCode",
-                        "installation":  true,
-                        "default":  true
-                    },
-                     {
                          "program":  "hyperv",
                          "name":  "Hyper-V",
-                         "installation":  true,
+                         "installation":  false,
                          "default":  true
                      },
                      {
                          "program":  "insomnia",
                          "name":  "Insomnia REST API Client",
-                         "installation":  false,
-                         "default":  true
-                     },
-                     {
-                         "program":  "wsl",
-                         "name":  "Windows Linux Subsystem (Ubuntu 18.04)",
                          "installation":  false,
                          "default":  true
                      },
@@ -49,33 +37,15 @@
                          "default":  false
                      },
                      {
-                         "program":  "vlc",
-                         "name":  "VLC Media Player",
-                         "installation":  true,
-                         "default":  false
-                     },
-                     {
-                         "program":  "spotify",
-                         "name":  "Spotify",
-                         "installation":  false,
-                         "default":  false
-                     },
-                     {
                          "program":  "discord",
                          "name":  "Discord",
-                         "installation":  true,
-                         "default":  false
-                     },
-                     {
-                         "program":  "steam",
-                         "name":  "Steam",
-                         "installation":  true,
+                         "installation":  false,
                          "default":  false
                      },
                      {
                          "program":  "dropbox",
                          "name":  "Dropbox",
-                         "installation":  true,
+                         "installation":  false,
                          "default":  true
                      }
                  ]

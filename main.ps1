@@ -180,11 +180,11 @@ if (([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::
             Write-Output "`n [ DOING ] Opens PC to This PC, not quick access"
             Set-ItemProperty -Path HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced -Name LaunchTo -Value 1
             Write-Output "`n [ DOING ] Taskbar where window is open for multi-monitor"
-            Set-ItemProperty -Path HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced -Name MMTaskbarMode -Value 2
-            Write-Output "`n [ DOING ] Disable Quick Access: Recent Files"
-            Set-ItemProperty -Path HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer -Name ShowRecent -Type DWord -Value 0
-            Write-Output "`n [ DOING ] Disable Quick Access: Frequent Folders"
-            Set-ItemProperty -Path HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer -Name ShowFrequent -Type DWord -Value 0
+            Set-ItemProperty -Path HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced -Name MMTaskbarMode -Value 0
+            Write-Output "`n [ DOING ] Enable Quick Access: Recent Files"
+            Set-ItemProperty -Path HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer -Name ShowRecent -Type DWord -Value 1
+            Write-Output "`n [ DOING ] Enable Quick Access: Frequent Folders"
+            Set-ItemProperty -Path HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer -Name ShowFrequent -Type DWord -Value 1
             Stop-Process -processName: Explorer -force # This will restart the Explorer service to make this work.
         }
         Write-Output "`n [ START ] Unistall Windows10 Unnecessary and Blotware Apps"
