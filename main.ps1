@@ -4,7 +4,6 @@ if (([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::
     Write-Output "`n [ START ] Configuring System Run"
     $StopWatch = [System.Diagnostics.Stopwatch]::StartNew()
     Set-ExecutionPolicy RemoteSigned
-    $ComputerName = Get-Random -InputObject "Turing", "Knuth", "Berners-Lee", "Torvalds", "Hopper", "Ritchie", "Stallman", "Gosling", "Church", "Dijkstra", "Cooper", "Gates", "Jobs", "Wozniak", "Zuckerberg", "Musk", "Nakamoto", "Dotcom", "Snowden", "Kruskal", "Neumann"
     $StopWatch.Stop()
     $StopWatchElapsed = $StopWatch.Elapsed.TotalSeconds
     Write-Output " [ DONE ] Configuring System Run ... $StopWatchElapsed seconds`n"
@@ -295,9 +294,6 @@ if (([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::
         $StopWatch.Stop()
         $StopWatchElapsed = $StopWatch.Elapsed.TotalSeconds
         Write-Output " [ DONE ] Remove Unnecessary Windows Registries ... $StopWatchElapsed seconds`n"
-        if ($env:computername -ne $ComputerName) {
-            Rename-Computer -NewName $ComputerName
-        }
     }
     else {
         $PurgeMode = Read-Host -Prompt "`n Enable Purge Mode (y/N)"
