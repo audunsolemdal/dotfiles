@@ -375,7 +375,7 @@ if (([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::
         "wsl"
         "docker"
         "slack"
-        "micorosft-windows-terminal"
+        "microsoft-windows-terminal"
         "azure-cli"
         "git"
         "poshgit"
