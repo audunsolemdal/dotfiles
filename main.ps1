@@ -171,8 +171,8 @@ if (([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::
             Set-NetConnectionProfile -NetworkCategory Private
             Write-Output "`n [ DOING ] Setting dark theme as default"
             Set-ItemProperty -Path HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize -Name AppsUseLightTheme -Value 0
-            Write-Output "`n [ DOING ] Show hidden files, Show protected OS files, Show file extensions"
-            Set-WindowsExplorerOptions -EnableShowHiddenFilesFoldersDrives -EnableShowProtectedOSFiles -EnableShowFileExtensions
+            Write-Output "`n [ DOING ] Show hidden files, Show file extensions"
+            Set-WindowsExplorerOptions -EnableShowHiddenFilesFoldersDrives -EnableShowFileExtensions
             Set-ItemProperty -Path HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced HideFileExt "0"
             #--- File Explorer Settings ---
             Write-Output "`n [ DOING ] Adds things back in your left pane like recycle bin"
