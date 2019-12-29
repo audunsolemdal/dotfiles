@@ -1,6 +1,6 @@
 [user]
-	name = Matheus Rocha Vieira
-	email = matheusrv@email.com
+	name = Audun L. Solemdal
+	email = auls@equinor.com
 	signingkey = KEY_ID
 
 [commit]

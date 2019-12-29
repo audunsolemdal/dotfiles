@@ -364,19 +364,33 @@ if (([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::
         "robotofonts"
         #Default Install
         "k-litecodecpackfull"
-        "ffmpeg"
-        "jre8"
-        "7zip"
         "googlechrome"
-        "autohotkey"
         "sysinternals"
         # Dev Tools Must Have
         "git.install"
         "lepton"
         "powershell"
-        "virtualbox"
         "vagrant"
-        "putty"
+        "vscode"
+        "greenshot"
+        "winrar"
+        "GoogleChrome"
+        # Work use
+        "wsl"
+        "docker"
+        "slack"
+        "micorosft-windows-terminal"
+        "azure-cli"
+        "git"
+        "poshgit"
+        "dotnetcore-sdk"
+        ##"kubernetes-helm --version 2.13.1"
+        # Private use 
+        "steam"
+        "leagueoflegends"
+        "vlc"
+        "spotify"
+
     )
     ForEach ($Program in $Programs) {
         Write-Output "`n [ START ] $Program"
@@ -386,6 +400,9 @@ if (([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::
         $StopWatchElapsed = $StopWatch.Elapsed.TotalSeconds
         Write-Output " [ DONE ] $Program ... $StopWatchElapsed seconds`n"
     }
+    RefreshEnv
+    code --install-extension Shan.code-settings-sync # Vscode needs settings sync from github gist
+
     $AllPrograms = Get-Content 'bootstrap\w10-settings.json' | Out-String | ConvertFrom-Json
     ForEach ($row in $AllPrograms.programs) {
         $ProgramName = $row.name
@@ -403,10 +420,6 @@ if (([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::
     Enable-UAC
     RefreshEnv
     Start-Process -FilePath 'autoruns' -Wait
-    $OzoneInstall = Read-Host -Prompt "`n Do you wish to install Ozone Exon V30 Mice Driver? (Y/n)"
-    if ([string]::IsNullOrWhiteSpace($OzoneInstall) -Or $OzoneInstall -eq 'Y' -Or $OzoneInstall -eq 'y') {
-        Start-Process -FilePath 'C:\Program Files (x86)\Google\Chrome\Application\chrome.exe' -ArgumentList 'https://www.ozonegaming.com/product/exon-v30'
-    }
     $OfficeInstall = Read-Host -Prompt "`n Do you wish to install Office? (Y/n)"
     if ([string]::IsNullOrWhiteSpace($OfficeInstall) -Or $OfficeInstall -eq 'Y' -Or $OfficeInstall -eq 'y') {
         Start-Process -FilePath 'C:\Program Files (x86)\Google\Chrome\Application\chrome.exe' -ArgumentList 'https://old.reddit.com/r/sjain_guides/comments/9m4m0k/microsoft_office_201319_simple_method_to_download'
@@ -421,12 +434,6 @@ if (([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::
         $regKeyHttp = $regKey -f 'http'
         $regKeyHttps = $regKey -f 'https'
         switch -Regex ($defaultBrowser.ToLower()) {
-            # Internet Explorer
-            'ie|internet|explorer' {
-                Set-ItemProperty $regKeyHttp  -name ProgId IE.HTTP
-                Set-ItemProperty $regKeyHttps -name ProgId IE.HTTPS
-                break
-            }
             # Firefox
             'ff|firefox' {
                 Set-ItemProperty $regKeyHttp  -name ProgId FirefoxURL
@@ -439,19 +446,6 @@ if (([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::
                 Set-ItemProperty $regKeyHttps -name ProgId ChromeHTML
                 break
             }
-            # Safari
-            'sa*|apple' {
-                Set-ItemProperty $regKeyHttp  -name ProgId SafariURL
-                Set-ItemProperty $regKeyHttps -name ProgId SafariURL
-                break
-            }
-            # Opera
-            'op*' {
-                Set-ItemProperty $regKeyHttp  -name ProgId Opera.Protocol
-                Set-ItemProperty $regKeyHttps -name ProgId Opera.Protocol
-                break
-            }
-        }
     }
     Set-DefaultBrowser chrome
     $GlobalStopWatch.Stop()

@@ -13,6 +13,7 @@ _site
 *.swp
 *.vi
 *.zip
+*.gz
 *~
 
 # OS or Editor folders
@@ -29,13 +30,6 @@ _site
 nbproject
 Thumbs.db
 
-# Komodo
-.komodotools
-*.komodoproject
-
-# grunt-html-validation
-validation-report.json
-validation-status.json
 
 # Folders to ignore
 bower_components
