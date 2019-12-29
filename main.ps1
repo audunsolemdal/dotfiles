@@ -387,7 +387,7 @@ if (([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::
         ##"kubernetes-helm --version 2.13.1"
         # Private use 
         "steam"
-        "leagueoflegends"
+        #"leagueoflegends"
         "vlc"
         "spotify"
 
@@ -451,6 +451,7 @@ if (([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::
     $GlobalStopWatch.Stop()
     $GlobalStopWatchElapsed = $StopWatch.Elapsed.TotalSeconds
     Write-Output "`n Total Execution Time ... $GlobalStopWatchElapsed seconds`n" 
+    }
 }
 else {
     Write-Output "`n [ ERROR ] You must execute this script with administrator privileges`n"
