@@ -105,7 +105,7 @@ EOF
                 if [ "$(_jq '.installation')" == true ]; then
                     programdependencies="$(jq -r '.programs[] | select(.program=="'"${programslug}"'").dependencies' "${PREVIOUS_PWD}"/bootstrap/unix-settings.json)"
                     dependencieinstallation="$(jq -r '.programs[] | select(.program=="'"${programdependencies}"'").installation' "${PREVIOUS_PWD}"/bootstrap/unix-settings.json)"
-                    if [ "${programdependencies}" == "null" ] || [ "${dependencieinstallation}" == true ]; then
+                    if [ "${programdependencies}" == "nu+ll" ] || [ "${dependencieinstallation}" == true ]; then
                         installflag=true
                     else
                         installflag=false
