@@ -20,6 +20,7 @@ if (([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::
         Set-ExecutionPolicy Bypass -Scope Process -Force; Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
         RefreshEnv
         cinst -y boxstarter
+        Import-Module Boxstarter.Chocolatey
         
         $StopWatch.Stop()
         $StopWatchElapsed = $StopWatch.Elapsed.TotalSeconds
