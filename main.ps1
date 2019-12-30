@@ -186,7 +186,16 @@ if (([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::
             Set-ItemProperty -Path HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer -Name ShowRecent -Type DWord -Value 1
             Write-Output "`n [ DOING ] Enable Quick Access: Frequent Folders"
             Set-ItemProperty -Path HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer -Name ShowFrequent -Type DWord -Value 1
+            Write-Output "`n [ DOING ] Removing 3D Objects folder"
+            Remove-Item -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\MyComputer\NameSpace\{0DB7E03F-FC29-4DC6-9020-FF41B59E513A}\'
+            #pictures
+            Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\FolderDescriptions\{0ddd015d-b06c-45d5-8c4c-f59713854639}\PropertyBag' -Name Thispcpolicy "Show"
+            # videos
+            Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\FolderDescriptions\{35286a68-3c57-41a1-bbb1-0eae73d76c95}\PropertyBag' -Name Thispcpolicy "Hide"
             Stop-Process -processName: Explorer -force # This will restart the Explorer service to make this work.
+            # music
+            Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\FolderDescriptions\{a0c69a99-21c8-4671-8703-7934162fcf1d}\PropertyBag' -Name Thispcpolicy "Hide"
+
         }
         Write-Output "`n [ START ] Unistall Windows10 Unnecessary and Blotware Apps"
         $StopWatch = [System.Diagnostics.Stopwatch]::StartNew()
