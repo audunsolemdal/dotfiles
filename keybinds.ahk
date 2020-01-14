@@ -50,8 +50,8 @@ CapsLock & WheelUp::
 ; Save time on ssh commands
 IfWinActive, Adminstrator: Windows Powershell
 {
-::ssh::ssh -l auls 
-return
+    ::ssh::ssh -l auls 
+    return
 }
 
 ; Cleanup for calculators
@@ -85,13 +85,30 @@ else
 
 ; Unused F keys
 
-; Launch VSCODE and create .md file for notes. alternative to notepad
-F4::Run, %userprofile%\AppData\Local\Programs\Microsoft VS Code\Code.exe "c:/appl/notes/%A_DD%-%A_MM%-%A_YYYY%.md", max
+; Open vscode
+F3::
+{
+    p = %userprofile%\AppData\Local\Programs\Microsoft VS Code\Code.exe
+    a = C:\Appl\repos
+    Run, %comspec% /K ""%p%" -n %a%",, max
+    return
+}
 return
 ; Launch Slack
 F7::Run "%userprofile%\AppData\Local\slack\slack.exe"
 return
 
 ; Launch Outlook
-F8::Run "%programfiles%\Microsoft Office\root\Office16\OUTLOOK.EXE"
+F8::
+Run "%programfiles%\Microsoft Office\root\Office16\OUTLOOK.EXE"
 return
+
+; Structured logging in vscode
+F4::
+{
+    p = %userprofile%\AppData\Local\Programs\Microsoft VS Code\Code.exe
+    a = C:\Appl\notes
+    b = C:\Appl\notes\%A_DD%-%A_MM%-%A_YYYY%.md
+    Run, %comspec% /K ""%p%" -n %a%" " %b%", max
+    return
+}
