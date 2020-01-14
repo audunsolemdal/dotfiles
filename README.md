@@ -1,19 +1,16 @@
-# dotfiles
-User-specific application configuration is traditionally stored in so called dotfiles. Dotfiles are plain text configuration files on Unix-y systems for things like our shell, ~/.zshrc, our editor in ~/.vimrc, and many others. They are called "dotfiles" as they typically are named with a leading . making them hidden files on your system, although this is not a strict requirement.
+# Changes in this fork
 
-Since these files are all plain text, we can gather them together in a git repository and use that to track the changes you make over time.
+## Todo
 
-## Install the Windows Subsystem for Linux
-Before installing any Linux distros for WSL, you must ensure that the "Windows Subsystem for Linux" optional feature is enabled:
+- global powershell profile for productivity 
+- windows terminal settings sync
+- Zsh + autosuggestions in wsl
+- some kind of sync/deployment of files in this repo to my hosts?
 
-1. Open PowerShell as Administrator and run:
-```
-Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Windows-Subsystem-Linux
-```
-2. Restart your computer when prompted.
-3. To download distros using PowerShell, use curl.
-```
-curl.exe -L -o ubuntu-1804.appx https://aka.ms/wsl-ubuntu-1804
-```
-Note: Windows 10 Spring 2018 Update (or later) includes the popular curl command-line utility with which you can invoke web requests from the command line.
+Done:
 
+- Personal settings and preferences
+
+Startup files (move to %userprofile%\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup): 
+- start.ps1 - Startup at work
+- WIP: keybinds.ahk - Global keybinds to stop bad habits, increase productivity
