@@ -1,4 +1,4 @@
-# cp this file to $PSHOME\Profile.ps1 (all users, allhosts)
+# cp ./startup/profile.ps1 $PSHOME\Profile.ps1 (all users, allhosts)
 
 # Default folder
 cd "C:\Appl\repos"
@@ -47,7 +47,7 @@ function List-AzRg()
     Get-AzResourceGroup | select -Property ResourceGroupName
 }
 
-# Helm
+# Containers
 
 function HelmDel($name)
 {
@@ -71,4 +71,30 @@ function KubeDown($name)
     $n = $m.Substring(2)
 
     kubectl scale deployments -n $n --replicas=0 --all
+}
+
+function KubeCon($con)
+{
+    $o = "sdpaks-$con-k8s"
+    kubectl config use-context $o
+
+    if ($?){
+    Write-host "Currently in " -NoNewline
+    Write-Host $con -ForegroundColor Green -NoNewline
+    Write-Host " cluster" -ForegroundColor Yellow
+    }
+}
+
+function KubeNs($name)
+{
+    # always returns true.. nneed workaround
+    kubectl config set-context --current --namespace=$name
+    if($?) {
+    $con = kubectl config current-context  
+    Write-host "Currently at " -NoNewline -ForegroundColor Yellow
+    Write-Host  $name -ForegroundColor Cyan -NoNewline
+    Write-Host " namespace in "  -ForegroundColor Yellow -NoNewline
+    Write-Host $con -ForegroundColor Green -NoNewline
+    Write-Host " cluster" -ForegroundColor Yellow
+    }
 }
