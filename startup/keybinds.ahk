@@ -1,6 +1,6 @@
 ; Default state of lock keys
 SetNumlockState, AlwaysOn
-;SetCapsLockState, AlwaysOff
+SetCapsLockState, AlwaysOff
 SetScrollLockState, AlwaysOff
 return
 
@@ -13,7 +13,7 @@ return
 Return
 
 ; Google Search highlighted text
-CapsLock & e::
+CapsLock & Space::
 {
     Send, ^c
     Sleep 50
