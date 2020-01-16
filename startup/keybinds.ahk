@@ -99,7 +99,7 @@ F7::Run "%userprofile%\AppData\Local\slack\slack.exe"
 return
 
 ; Launch Outlook
-F8::
+F2::
 Run "%programfiles%\Microsoft Office\root\Office16\OUTLOOK.EXE"
 return
 
