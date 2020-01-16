@@ -10,14 +10,20 @@ $urls = @(
 
 )
 
-Start-Process "firefox.exe" $urls
+Test-Path "C:\Program Files\Mozilla Firefox"
+if($?)
+{
+    Start-Process "firefox.exe" $urls
+}
+else {
+    Start-Process "chrome.exe" $urls
+}
 
 # Bypass UAC admin prompts for the scripts duration
 Set-ItemProperty -Path REGISTRY::HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Policies\System -Name ConsentPromptBehaviorAdmin -Value 0 
 
 # Open Termnials + vscode
 Start-Process "wsl" -Verb RunAs
-Start-Process "powershell" -Verb RunAs 
 Start-Process "code" -Verb RunAs
 Start-Process shell:appsFolder\Microsoft.WindowsTerminal_8wekyb3d8bbwe!App -Verb RunAs # Windows Terminal
 

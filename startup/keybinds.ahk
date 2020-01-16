@@ -112,3 +112,10 @@ F4::
     Run, %comspec% /K ""%p%" -n %a%" " %b%", max
     return
 }
+
+; Mouse click with useless key (right ctrl)
+RCtrl::
+{
+    Click
+    Return
+}
