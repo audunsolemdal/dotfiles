@@ -9,7 +9,7 @@ Import-Module 'C:\tools\poshgit\dahlbyk-posh-git-9bda399\src\posh-git.psd1'
 
 # Alias
 
-set-alias grep select-string
+Set-Alias grep select-string
 #Set-Alias doc docker.exe
 #Set-Alias dock docker-compose.exe
 Set-Alias k kubectl.exe
@@ -22,7 +22,7 @@ function TouchFile ($name)
     New-Item -Path . -Name $name
 }
 
-Set-alias -name touch -Value TouchFile
+Set-Alias -name touch -Value TouchFile
 
 # Azure handy
 
@@ -102,3 +102,49 @@ function FSync()
 {
     fluxctl.exe sync --k8s-fwd-ns flux
 }
+
+# General bash-style aliases
+
+function New-BashStyleAlias([string]$name, [string]$command)
+{
+    $sb = [scriptblock]::Create($command)
+    New-Item "Function:\global:$name" -Value $sb | Out-Null
+}
+
+# Quick Folder movement
+New-BashStyleAlias .. 'cd ..'
+New-BashStyleAlias ... "cd ../../"
+New-BashStyleAlias .... "cd ../../../"
+New-BashStyleAlias ..... "cd ../../../../"
+
+# CD to Specific folders
+New-BashStyleAlias home 'cd ~'
+New-BashStyleAlias appl 'cd c:/appl'
+New-BashStyleAlias repos 'cd c:/appl/repos'
+New-BashStyleAlias dotfiles 'cd c:/appl/dotfiles'
+New-BashStyleAlias sdp-flux 'cd c:/appl/sdp-flux'
+New-BashStyleAlias sdp-aks 'cd c:/appl/sdp-aks'
+
+# Git commands
+New-BashStyleAlias log "git log --oneline"
+New-BashStyleAlias gdiff "git diff"
+New-BashStyleAlias branch "git branch"
+New-BashStyleAlias status "git status"
+New-BashStyleAlias fetch "git fetch"
+New-BashStyleAlias push "git push origin head"
+New-BashStyleAlias pull "git pull"
+New-BashStyleAlias recent "git for-each-ref --sort -committerdate refs/heads/"
+New-BashStyleAlias gadd "git add -A"
+New-BashStyleAlias glog "git log --graph --pretty oneline --abbrev-commit --decorate"
+
+## Git branch switching
+New-BashStyleAlias master "git checkout master"
+New-BashStyleAlias prod "git checkout prod"
+New-BashStyleAlias dev "git checkout dev"
+
+# Others
+New-BashStyleAlias editgit "code %homepath%/.gitconfig" # ~ not working
+New-BashStyleAlias editbash "code %homepath%/.bashrc" 
+New-BashStyleAlias editzsh "code %homepath%/.zshrc"
+New-BashStyleAlias editba "code %homepath%/.bash_aliases"
+New-BashStyleAlias np "cmd.exe /c notepad"

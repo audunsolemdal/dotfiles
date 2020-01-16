@@ -14,12 +14,6 @@ alias l=\"ls -h --color --group-directories-first\" # same as above
 alias ll=\"ls -lv --group-directories-first\" # non-flat view
 alias lm=\"ll | more\"
 
-# Folder alias
-alias hdir=\"cd ${HOME}\"
-alias homedir=\"cd ${HOME}\"
-# shellcheck disable=SC2139
-alias wdir=\"cd ${defaultfolder}\"
-
 # Quick parent-directory aliases
 alias ..=\"cd ..\"
 alias ...=\"cd ../..\"
@@ -30,15 +24,9 @@ alias .7=\"cd ../../../../../..\"
 alias .8=\"cd ../../../../../../..\"
 alias .9=\"cd ../../../../../../../..\"
 
-# File and Folder Permission
-alias mx=\"chmod a+x\"
-alias 000=\"chmod 000\"
-alias 644=\"chmod 644\"
-alias 755=\"chmod 755\"
-alias 777=\"chmod 777\"
-
 # Others
 alias editbash=\"nano ${HOME}/.bashrc\"
+alias editzsh=\"nano ${HOME}/.zshrc\"
 alias editba=\"nano ${HOME}/.bash_aliases\"
 alias resource=\"source ${HOME}/.bashrc\"
 alias hosts=\"nano /mnt/c/Windows/System32/drivers/etc/hosts\"
