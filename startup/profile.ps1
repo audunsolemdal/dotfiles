@@ -137,6 +137,14 @@ New-BashStyleAlias recent "git for-each-ref --sort -committerdate refs/heads/"
 New-BashStyleAlias gadd "git add -A"
 New-BashStyleAlias glog "git log --graph --pretty oneline --abbrev-commit --decorate"
 
+function gcom(){
+    [CmdletBinding()]
+    param (
+          [string] $message
+    )
+   git commit -m $message
+}
+
 ## Git branch switching
 New-BashStyleAlias master "git checkout master"
 New-BashStyleAlias prod "git checkout prod"
@@ -148,3 +156,5 @@ New-BashStyleAlias editbash "code %homepath%/.bashrc"
 New-BashStyleAlias editzsh "code %homepath%/.zshrc"
 New-BashStyleAlias editba "code %homepath%/.bash_aliases"
 New-BashStyleAlias np "cmd.exe /c notepad"
+
+#Testing
