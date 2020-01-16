@@ -6,6 +6,6 @@ copy ".\startup\profiles.json" "%LOCALAPPDATA%\Packages\Microsoft.WindowsTermina
 .\startup\keybinds.ahk
 
 PowerShell -Command "Set-ExecutionPolicy RemoteSigned"
-PowerShell -Command "& {c:\appl\repos\dotfiles\startup\profile.ps1}"
+PowerShell -Command "& {c:\appl\repos\dotfiles\startup\start.ps1}"
 
 exit
