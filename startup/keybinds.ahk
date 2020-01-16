@@ -99,9 +99,9 @@ F7::Run "%programfiles%\slack\slack.exe"
 return
 
 ; Launch Outlook
-F2::
-Run "%programfiles(x86)%\Microsoft Office\root\Office16\OUTLOOK.EXE"
-return
+;;F2::
+;Run "%programfiles(x86)%\Microsoft Office\root\Office16\OUTLOOK.EXE"
+;return
 
 ; Structured logging in vscode
 F4::
