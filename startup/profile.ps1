@@ -14,7 +14,6 @@ set-alias grep select-string
 #Set-Alias dock docker-compose.exe
 Set-Alias k kubectl.exe
 Set-Alias he helm.exe
-#Set-Alias flux fluxctl.exe sync --k8s-fwd-ns flux
 
 # Bash functionality
 
@@ -32,7 +31,7 @@ function AzLogin()
     az login
 }
 
-function AzSub()
+function Set-AzSub()
 {
     az account set --subscription "SDP Tools"
 }
@@ -57,7 +56,7 @@ function HelmDel($name)
     helm del --purge $name
 }
 
-function KubeUp($name)
+function KUp($name)
 {
     $m = kubectl get deployments --all-namespaces | Select-String -Pattern $name -SimpleMatch -CaseSensitive | Out-String | %{$_.split(" ")[0]}
     $n = $m.Substring(2)
@@ -65,7 +64,7 @@ function KubeUp($name)
     kubectl scale deployments -n $n --replicas=1 --all
 }
 
-function KubeDown($name)
+function KDown($name)
 {
     $m = kubectl get deployments --all-namespaces | Select-String -Pattern $name -SimpleMatch -CaseSensitive | Out-String | %{$_.split(" ")[0]}
     $n = $m.Substring(2)
@@ -73,7 +72,7 @@ function KubeDown($name)
     kubectl scale deployments -n $n --replicas=0 --all
 }
 
-function KubeCon($con)
+function KCon($con)
 {
     $o = "sdpaks-$con-k8s"
     kubectl config use-context $o
@@ -85,7 +84,7 @@ function KubeCon($con)
     }
 }
 
-function KubeNs($name)
+function KNs($name)
 {
     # always returns true.. nneed workaround
     kubectl config set-context --current --namespace=$name
@@ -97,4 +96,9 @@ function KubeNs($name)
     Write-Host $con -ForegroundColor Green -NoNewline
     Write-Host " cluster" -ForegroundColor Yellow
     }
+}
+
+function FSync()
+{
+    fluxctl.exe sync --k8s-fwd-ns flux
 }
