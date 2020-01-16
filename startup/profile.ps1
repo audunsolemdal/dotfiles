@@ -121,9 +121,9 @@ New-BashStyleAlias ..... "cd ../../../../"
 New-BashStyleAlias home 'cd ~'
 New-BashStyleAlias appl 'cd c:/appl'
 New-BashStyleAlias repos 'cd c:/appl/repos'
-New-BashStyleAlias dotfiles 'cd c:/appl/dotfiles'
-New-BashStyleAlias sdp-flux 'cd c:/appl/sdp-flux'
-New-BashStyleAlias sdp-aks 'cd c:/appl/sdp-aks'
+New-BashStyleAlias dotfiles 'cd c:/appl/repos/dotfiles'
+New-BashStyleAlias sdp-flux 'cd c:/appl/repos/sdp-flux'
+New-BashStyleAlias sdp-aks 'cd c:/appl/repos/sdp-aks'
 
 # Git commands
 New-BashStyleAlias log "git log --oneline"
@@ -144,6 +144,8 @@ function gcom(){
     )
    git commit -m $message
 }
+
+set-alias gcmon gcom
 
 ## Git branch switching
 New-BashStyleAlias master "git checkout master"
