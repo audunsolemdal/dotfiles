@@ -54,6 +54,13 @@ IfWinActive, Adminstrator: Windows Powershell
     return
 }
 
+; Save time on ssh commands
+IfWinActive, Adminstrator: Windows Powershell
+{
+    ::sudo::sudo su - 
+    return
+}
+
 ; Cleanup for calculators
 #c::
 if WinExist("Kalkulator") || if WinExist("Calculator")
