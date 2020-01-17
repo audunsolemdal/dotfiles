@@ -11,6 +11,9 @@ This will make everything in the startup folder be used at startup.
 - Zsh + autosuggestions in wsl
 - some kind of sync/deployment of files in this repo to my hosts?
 - personal aliases for WSL
+- Window/tile manager
+- better sync, YADM?
+- sync settings to remote servers
 
 Done:
 
