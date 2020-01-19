@@ -27,5 +27,15 @@ Start-Process "wsl" -Verb RunAs
 Start-Process "code" -Verb RunAs
 Start-Process shell:appsFolder\Microsoft.WindowsTerminal_8wekyb3d8bbwe!App -Verb RunAs # Windows Terminal
 
+Test-path "f:\"
+if($?)
+{
+    try { Remove-PSDrive -name "F" }
+    catch {
+        
+    }
+}
+
+
 # Re-enable UAC prompts (use value "1" for max validation)
 Set-ItemProperty -Path REGISTRY::HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Policies\System -Name ConsentPromptBehaviorAdmin -Value 2
