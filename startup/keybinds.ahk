@@ -1,3 +1,5 @@
+#SingleInstance force
+
 ; Default state of lock keys
 SetNumlockState, AlwaysOn
 SetCapsLockState, AlwaysOff
