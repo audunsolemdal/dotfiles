@@ -94,33 +94,6 @@ else
 
 ; Unused F keys
 
-; Open vscode
-F3::
-{
-    p = %programfiles%\Microsoft VS Code\Code.exe
-    a = C:\Appl\repos
-    Run, %comspec% /K ""%p%" -n %a%",, max
-    return
-}
-return
-; Launch Slack
-F7::Run "%programfiles%\slack\slack.exe"
-return
-
-; Launch Outlook
-;;F2::
-;Run "%programfiles(x86)%\Microsoft Office\root\Office16\OUTLOOK.EXE"
-;return
-
-; Structured logging in vscode
-F4::
-{
-    p = %programfiles%\Microsoft VS Code\Code.exe
-    a = C:\Appl\notes
-    b = C:\Appl\notes\%A_DD%-%A_MM%-%A_YYYY%.md
-    Run, %comspec% /K ""%p%" -n %a%" " %b%", max
-    return
-}
 
 ; Mouse click with useless key (right ctrl)
 RCtrl::
