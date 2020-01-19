@@ -10,8 +10,8 @@ Import-Module 'C:\tools\poshgit\dahlbyk-posh-git-9bda399\src\posh-git.psd1'
 # Alias
 
 Set-Alias grep select-string
-#Set-Alias doc docker.exe
-#Set-Alias dock docker-compose.exe
+Set-Alias d docker
+Set-Alias doc docker-compose
 Set-Alias k kubectl.exe
 Set-Alias he helm.exe
 
@@ -98,6 +98,61 @@ function KNs($name)
     }
 }
 
+function doexec(){
+    [CmdletBinding()]
+    param (
+          [string] $name
+    )
+   try {
+       docker exec -it $name bash
+   }
+   catch {
+    docker exec -it $name sh
+   }
+}
+
+
+function docup(){
+    [CmdletBinding()]
+    param (
+          [string] $name
+    )
+       docker-compose up $name -d
+}
+
+Set-Alias doup docup
+
+function dops(){
+    [CmdletBinding()]
+    param (
+          [string] $name
+    )
+       docker ps
+}
+
+function docdown(){
+    [CmdletBinding()]
+    param (
+          [string] $name
+    )
+       docker-compose down $name
+}
+
+Set-Alias dodown docdown
+
+function kexec(){
+    [CmdletBinding()]
+    param (
+          [string] $name
+    )
+   try {
+       kubectl exec -it $name bash
+   }
+   catch {
+    kubectl exec -it $name sh
+   }
+}
+
 function FSync()
 {
     fluxctl.exe sync --k8s-fwd-ns flux
@@ -121,31 +176,94 @@ New-BashStyleAlias ..... "cd ../../../../"
 New-BashStyleAlias home 'cd ~'
 New-BashStyleAlias appl 'cd c:/appl'
 New-BashStyleAlias repos 'cd c:/appl/repos'
+New-BashStyleAlias progs 'cd c:/appl/progs'
+New-BashStyleAlias certs 'cd c:/appl/certs'
 New-BashStyleAlias dotfiles 'cd c:/appl/repos/dotfiles'
 New-BashStyleAlias sdp-flux 'cd c:/appl/repos/sdp-flux'
 New-BashStyleAlias sdp-aks 'cd c:/appl/repos/sdp-aks'
 
+Set-Alias flux sdp-flux
+Set-Alias aks sdp-aks
+
 # Git commands
 New-BashStyleAlias log "git log --oneline"
 New-BashStyleAlias gdiff "git diff"
-New-BashStyleAlias branch "git branch"
+New-BashStyleAlias branch "git branch -a"
 New-BashStyleAlias status "git status"
+New-BashStyleAlias reset "git reset --soft"
 New-BashStyleAlias fetch "git fetch"
 New-BashStyleAlias push "git push origin head"
 New-BashStyleAlias pull "git pull"
 New-BashStyleAlias recent "git for-each-ref --sort -committerdate refs/heads/"
-New-BashStyleAlias gadd "git add -A"
 New-BashStyleAlias glog "git log --graph --pretty oneline --abbrev-commit --decorate"
+
+
+function reset(){
+    [CmdletBinding()]
+    param (
+        [Parameter(ParameterSetName="Default", Position=0)]
+        $Mode = "soft"
+    )
+    $branch = (git rev-parse --abbrev-ref HEAD)
+    git reset --$Mode origin/$branch
+    git restore --staged .
+    status
+}
 
 function gcom(){
     [CmdletBinding()]
     param (
+        [Parameter(Mandatory=$true, ParameterSetName="Default", Position=0)]
           [string] $message
     )
    git commit -m $message
 }
 
 set-alias gcmon gcom
+set-alias com gcom
+
+function gadd(){
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory=$true, ParameterSetName="Default", Position=0)]
+          [string] $name
+    )
+   git add $name
+   git status
+}
+
+set-alias add gadd
+
+function gaddcom(){
+    [CmdletBinding()]
+    param (
+          [Parameter(Mandatory=$true, ParameterSetName="Default", Position=0)]
+          [string] $Name,
+          [Parameter(Mandatory=$true, ParameterSetName="Default", Position=1)]
+          [string] $Message
+    )
+   git add $Name
+   git commit -m $Message
+   git --no-pager log --pretty=oneline -n3 --oneline
+}
+
+set-alias acom gaddcom
+
+function reset(){
+    [CmdletBinding()]
+    param (
+        [Parameter(ParameterSetName="Mode", Position=0)]
+        $Mode = "soft"
+    )
+    $branch = (git rev-parse --abbrev-ref HEAD)
+    git reset --$Mode origin/$branch
+    git restore --staged .
+    " `r`n "
+    git --no-pager log --pretty=oneline -n3 --oneline
+    " `r`n "
+    status
+}
+
 
 ## Git branch switching
 New-BashStyleAlias master "git checkout master"
