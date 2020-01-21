@@ -8,6 +8,9 @@ fi
 defaultfolder="$(jq -r ".personal.defaultfolder" "${PREVIOUS_PWD}"/bootstrap/unix-settings.json)"
 echo "
 
+        # Extra to path
+        PATH=$PATH:~/path
+
         # Custom functions
 
         function AzLogin()
@@ -36,11 +39,17 @@ echo "
 
         # git functions
 
-        function gcom(){
+        function com(){
             git commit -m $1
         }
+
         function gadd(){
             git add $1
+        }
+
+        function acom(){
+            git add $1
+            git commit -m $2
         }
 
 
@@ -49,7 +58,7 @@ echo "
         alias d ="docker"
         alias doc ="docker-compose"
         alias k ="kubectl"
-        alias fsync = "fluxctl sync --k8s-fwd-ns flux"
+        #alias fsync = "fluxctl sync --k8s-fwd-ns flux"
 
 
         # ls aliases
@@ -91,7 +100,7 @@ echo "
         alias recent="git for-each-ref --sort -committerdate refs/heads/"
         alias glog="git log --graph --pretty oneline --abbrev-commit --decorate"
         alias add="gadd"
-        alias com ="gcom"
+       #alias com ="gcom"
 
         # Others
         alias editbash="nano ${HOME}/.bashrc"

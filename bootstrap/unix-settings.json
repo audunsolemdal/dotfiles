@@ -16,13 +16,13 @@
       "program": "azurecli",
       "name": "Azure Comand-line Interface",
       "installation": "true",
-      "default": false
+      "default": true
     },
     {
       "program": "powershell",
       "name": "PowerShell",
       "installation": "true",
-      "default": false
+      "default": true
     },
     {
       "program": "dotnet",
@@ -55,7 +55,7 @@
     {
       "program": "nginx",
       "name": "Nginx",
-      "installation": "false",
+      "installation": "true",
       "default": false
     },
     {
@@ -153,26 +153,26 @@
       "program": "docker",
       "name": "Docker",
       "installation": "true",
-      "default": false,
+      "default": true,
       "config": true
     },
     {
       "program": "docker-compose",
       "name": "Docker Compose",
-      "installation": "false",
+      "installation": "true",
       "default": true
     },
     {
       "program": "kubectl",
       "name": "Kubernetes",
       "installation": "true",
-      "default": false
+      "default": true
     },
     {
       "program": "kubernetes-helm",
       "name": "Kubernetes Helm",
       "installation": "true",
-      "default": false,
+      "default": true,
       "dependencies": "kubectl"
     }
   ],
