@@ -8,9 +8,7 @@ This will make everything in the startup folder be used at startup.
 
 ## Todo
 
-- Zsh + autosuggestions in wsl
 - some kind of sync/deployment of files in this repo to my hosts?
-- personal aliases for WSL
 - Window/tile manager
 - better sync, YADM?
 - sync settings to remote servers
@@ -24,3 +22,5 @@ Done:
 - windows terminal settings sync
 - "autoupdates" via startup script
 - bash-like aliases in powershell
+- personal aliases for WSL
+- Zsh + autosuggestions in wsl (needs verification from scratch install)
