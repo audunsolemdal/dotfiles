@@ -12,6 +12,7 @@ This will make everything in the startup folder be used at startup.
 - Window/tile manager
 - better sync, YADM?
 - sync settings to remote servers
+- gitconfig?
 
 Done:
 
