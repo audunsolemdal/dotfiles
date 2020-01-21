@@ -7,6 +7,51 @@ else
 fi
 defaultfolder="$(jq -r ".personal.defaultfolder" "${PREVIOUS_PWD}"/bootstrap/unix-settings.json)"
 echo "
+
+        # Custom functions
+
+        function AzLogin()
+        {
+            az login
+        }
+
+        function Set-AzSub()
+        {
+            az account set --subscription "SDP Tools"
+        }
+
+        function kexec(){
+            kubectl exec -it $1 bash
+        }
+
+        function dexec(){
+            docker exec -it $1 bash
+        }
+        function docup(){
+            docker-compose up -d $1
+        }
+        function docdown(){
+            docker-compose down $1
+        }
+
+        # git functions
+
+        function gcom(){
+            git commit -m $1
+        }
+        function gadd(){
+            git add $1
+        }
+
+
+        # ALIASES
+        # container aliases
+        alias d ="docker"
+        alias doc ="docker-compose"
+        alias k ="kubectl"
+        alias fsync = "fluxctl sync --k8s-fwd-ns flux"
+
+
         # ls aliases
         alias la="ls -al"
         alias ls="ls -h --color --group-directories-first" # flat view w/ directories first
@@ -40,10 +85,13 @@ echo "
         alias status="git status"
         alias reset="git reset --soft"
         alias fetch="git fetch"
+        alias stash="git stash"
         alias push="git push origin head"
         alias pull="git pull"
         alias recent="git for-each-ref --sort -committerdate refs/heads/"
         alias glog="git log --graph --pretty oneline --abbrev-commit --decorate"
+        alias add="gadd"
+        alias com ="gcom"
 
         # Others
         alias editbash="nano ${HOME}/.bashrc"

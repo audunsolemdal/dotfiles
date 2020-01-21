@@ -58,7 +58,7 @@ IfWinActive, Adminstrator: Windows Powershell
 ; Save time on ssh commands
 IfWinActive, Adminstrator: Windows Powershell
 {
-    ::sudo::sudo su - 
+    ::sudo s::sudo su - 
     return
 }
 
