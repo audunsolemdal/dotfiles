@@ -1,15 +1,15 @@
 {
   "personal": {
     "name": "Audun L. Solemdal",
-    "email": "auls@equinor.com",
+    "email": "matheusrv@email.com",
     "githubuser": "solomson",
-    "defaultfolder": "/mnt/c/Users/audun.solemdal/Documents"
+    "defaultfolder": "/mnt/c/appl/Dev"
   },
   "programs": [
     {
       "program": "ssh",
       "name": "Secure Shell (SSH)",
-      "installation": "true",
+      "installation": "false",
       "default": false
     },
     {

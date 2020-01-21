@@ -14,6 +14,7 @@ EOF
 	if [ -d "${HOME}"/tmp ]; then
 		sudo rm -f -R "${HOME}"/tmp
 	fi
+    HOME=/mnt/c/appl
 	mkdir -p "${HOME}"/tmp
 	cd "${HOME}"/tmp || return
     sudo apt -qq update
@@ -69,11 +70,56 @@ EOF
             unzip
             libssl-dev
             ca-certificates
+            zsh
         )
         trap '' 2
         sudo apt -y install "${apps[@]}"
         trap 2
         unset apps
+
+git clone https://github.com/zsh-users/zsh-autosuggestions ~/.zsh/zsh-autosuggestions
+
+        # zsh as default shell
+cat << EOF >> ~/.bashrc
+        if [ -t 1 ]; then
+        exec zsh
+        fi
+        HOME=/mnt/c/appl
+EOF
+
+        curl -L git.io/antigen > ~/antigen.zsh
+
+cat << EOF >> ~/.zshrc
+        HOME=/mnt/c/appl
+
+        antigen bundle zsh-users/zsh-autosuggestions
+        source ~/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh
+
+        source ~/antigen.zsh
+
+        # Load the oh-my-zsh's library.
+        antigen use oh-my-zsh
+
+        # Bundles from the default repo (robbyrussell's oh-my-zsh).
+        antigen bundle git
+        antigen bundle heroku
+        antigen bundle pip
+        antigen bundle lein
+        antigen bundle command-not-found
+
+        # Syntax highlighting bundle.
+        antigen bundle zsh-users/zsh-syntax-highlighting
+
+        # Load the theme.
+        antigen theme robbyrussell
+
+        antigen bundle zsh-users/zsh-autosuggestions
+
+        # Tell Antigen that you're done.
+        antigen apply
+EOF
+
+
         endtime=$(date +%s)
         printf " [ DONE ] Common Requirements ... %s seconds\n" "$((endtime - starttime))"
         printf "\n [ START ] Configurating Command Alias"
@@ -174,10 +220,10 @@ EOF
         read -r personalconfig
         if [ -z "${personalconfig}" ] || [ "${personalconfig}" == Y ] || [ "${personalconfig}" == y ]; then
         
-            printf "\n Your Name (Default: Matheus Rocha Vieira): "
+            printf "\n Your Name (Default: Audun L. Solemdal): "
             read -r username
             if [ -z "${username}" ]; then
-                username="Matheus Rocha Vieira"
+                username="Audun L. Solemdal"
                 echo "$username"
             fi
             git config --global user.name "${username}"
