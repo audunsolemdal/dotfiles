@@ -1,6 +1,7 @@
 # cp ./startup/profile.ps1 $PSHOME\Profile.ps1 (all users, allhosts)
 
 # Default folder
+$env:HOME = "C:\Appl"
 cd "C:\Appl\repos"
 
 # Critical Modules
@@ -44,6 +45,12 @@ function Get-AzRgContent($rgname)
 function List-AzRg()
 {
     Get-AzResourceGroup | select -Property ResourceGroupName
+}
+
+function Get-AKSCredentials()
+{
+    az aks get-credentials -n sdpaks-prod-k8s -g sdpaks-prod
+    az aks get-credentials -n sdpaks-dev-k8s -g sdpaks-dev
 }
 
 # Containers
