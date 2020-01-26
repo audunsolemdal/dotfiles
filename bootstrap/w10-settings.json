@@ -3,7 +3,7 @@
                      {
                          "program":  "docker-desktop",
                          "name":  "Docker Desktop",
-                         "installation":  true,
+                         "installation":  false,
                          "default":  true
                      },
                      {
@@ -33,7 +33,7 @@
                      {
                          "program":  "ccleaner",
                          "name":  "CCleaner",
-                         "installation":  true,
+                         "installation":  false,
                          "default":  false
                      },
                      {

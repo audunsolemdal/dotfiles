@@ -6,7 +6,13 @@ cd "C:\Appl\repos"
 
 # Critical Modules
 
-Import-Module 'C:\tools\poshgit\dahlbyk-posh-git-9bda399\src\posh-git.psd1'
+Import-Module 'posh-git'
+Import-Module "Terminal-icons"
+Import-Module "PowerLine"
+
+# Powerline
+$Prompt[6] = { "auls@local " }
+Add-PowerLineBlock { Write-VcsStatus } -AutoRemove
 
 # Alias
 
@@ -302,18 +308,6 @@ if ($isAdmin)
     $Host.UI.RawUI.WindowTitle += " [ADMIN]"
 }
 
-
-function prompt 
-{ 
-    if ($isAdmin) 
-    {
-        "[" + (Get-Location) + "] # "
-    }
-    else 
-    {
-        "[" + (Get-Location) + "] $ "
-    }
-}
 
 
 function dirs

@@ -379,10 +379,10 @@ if (([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::
         "vagrant"
         "vscode"
         "greenshot"
-        "winrar"
         "GoogleChrome"
         # Work use
         "wsl"
+        "wsl-ubuntu-1804"
         "docker"
         "slack"
         "microsoft-windows-terminal"
@@ -395,7 +395,6 @@ if (([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::
         "steam"
         #"leagueoflegends"
         "vlc"
-        "spotify"
 
     )
     ForEach ($Program in $Programs) {
@@ -423,13 +422,25 @@ if (([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::
             Write-Output " [ DONE ] $ProgramName ... $StopWatchElapsed  seconds`n"
         }
     }
+
+    # Install PowerShell modules
+    $Modules = @(
+        "poshgit"
+        "Graphical"
+        "MSTerminalSettings"
+        "Terminal-Icons"
+        "Pansies"
+        "PowerLine"
+        "PSProfile"
+    )
+
+    Foreach ($module in Modules){
+        Install-Module -Name $module -Force -AllowClobber
+    }
+
     Enable-UAC
     RefreshEnv
     Start-Process -FilePath 'autoruns' -Wait
-    $OfficeInstall = Read-Host -Prompt "`n Do you wish to install Office? (Y/n)"
-    if ([string]::IsNullOrWhiteSpace($OfficeInstall) -Or $OfficeInstall -eq 'Y' -Or $OfficeInstall -eq 'y') {
-        Start-Process -FilePath 'C:\Program Files (x86)\Google\Chrome\Application\chrome.exe' -ArgumentList 'https://old.reddit.com/r/sjain_guides/comments/9m4m0k/microsoft_office_201319_simple_method_to_download'
-    }
     $AdobeInstall = Read-Host -Prompt "`n Do you wish to install Adobe Products? (Y/n)"
     if ([string]::IsNullOrWhiteSpace($AdobeInstall) -Or $AdobeInstall -eq 'Y' -Or $AdobeInstall -eq 'y') {
         Start-Process -FilePath 'C:\Program Files (x86)\Google\Chrome\Application\chrome.exe' -ArgumentList 'https://old.reddit.com/r/sjain_guides/wiki/downloads'

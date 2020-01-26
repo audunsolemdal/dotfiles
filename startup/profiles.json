@@ -25,7 +25,7 @@
         "backgroundImageStechMode": "uniformToFill",
         "colorScheme": "Campbell",
         "cursorHeight": 25,
-        "fontFace": "Fira Code",
+        "fontFace": "LiberationMono NF",
         "fontSize": 16,
         "icon": "ms-appdata:///roaming/pwsh-32.png",
         "guid": "{61c54bbd-c2c6-5271-96e7-009a87ff44bf}",
