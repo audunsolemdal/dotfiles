@@ -286,4 +286,65 @@ New-BashStyleAlias editzsh "code %homepath%/.zshrc"
 New-BashStyleAlias editba "code %homepath%/.bash_aliases"
 New-BashStyleAlias np "cmd.exe /c notepad"
 
-#Testing
+#Testing / remote inspiration
+# "Some functions copied from github users @devblackops @scrthq and @timsneath
+
+# Find out if the current user identity is elevated (has admin rights)
+
+$identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+$principal = New-Object Security.Principal.WindowsPrincipal $identity
+$isAdmin = $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+
+
+$Host.UI.RawUI.WindowTitle = "PowerShell {0}" -f $PSVersionTable.PSVersion.ToString()
+if ($isAdmin)
+{
+    $Host.UI.RawUI.WindowTitle += " [ADMIN]"
+}
+
+
+function prompt 
+{ 
+    if ($isAdmin) 
+    {
+        "[" + (Get-Location) + "] # "
+    }
+    else 
+    {
+        "[" + (Get-Location) + "] $ "
+    }
+}
+
+
+function dirs
+{
+    if ($args.Count -gt 0)
+    {
+        Get-ChildItem -Recurse -Include "$args" | Foreach-Object FullName
+    }
+    else
+    {
+        Get-ChildItem -Recurse | Foreach-Object FullName
+    }
+}
+
+Import-Module MSTerminalSettings
+$msTermProfileName = 'PowerShell' # Replace with whatever Terminal profile name you're using
+$msTermProfile     = Get-MSTerminalProfile -Name $msTermProfileName
+$script:bombThrown = $false
+function prompt {
+    if ($? -eq $false) {
+        # RED ALERT!!!
+        # Only do this if we're using Microsoft Terminal
+        if ((Get-Process -Id $PID).Parent.Parent.ProcessName -eq 'WindowsTerminal') {
+            Set-MSTerminalProfile -Name $msTermProfile.name -BackgroundImage 'https://media.giphy.com/media/HhTXt43pk1I1W/giphy.gif' -UseAcrylic:$false
+            $script:bombThrown = $true
+        }
+    } else {
+        # Reset to previous settings
+        if ($script:bombThrown) {
+            Set-MSTerminalProfile -Name $msTermProfile.name -BackgroundImage $msTermProfile.backgroundImage -UseAcrylic:$msTermProfile.useAcrylic
+            $script:bombThrown = $false
+        }
+    }
+}
