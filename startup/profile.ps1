@@ -466,13 +466,15 @@ function Global:prompt {
 
     if ($lastCommand = Get-History -Count 1) {
         $timeTaken = '{0:N2}' -f ($lastCommand.EndExecutionTime - $lastCommand.StartExecutionTime).TotalMilliseconds
-        $offset = $host.UI.RawUI.WindowSize.Width - $timeTaken.Length - 4
+        $dt = get-date -Format "HH:mm:ss"
+        $offset = $host.UI.RawUI.WindowSize.Width - $timeTaken.Length - $dt.Length -  8
 
-        $prompt = "{0}{1}[{2}G[{3} ms]" -f @(
+        $prompt = "{0}{1}[{2}G[{3} ms] - {4}" -f @(
             $prompt
             ([Char]27)
             $offset
-            Write-ColourfulString -Colour Purple -String $timeTaken
+            Write-ColourfulString -Colour Purple -String "$timeTaken"
+            Write-ColourfulString -Colour Cyan -String "$dt"
         )
 
         "`n{0}`n{1}|auls@local> " -f $prompt, ($lastCommand.Id + 1)
