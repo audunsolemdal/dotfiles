@@ -5,56 +5,68 @@
 // For documentation on these settings, see: https://aka.ms/terminal-documentation
 
 {
-    "$schema": "https://aka.ms/terminal-profiles-schema",
-  
-    "defaultProfile": "{61c54bbd-c2c6-5271-96e7-009a87ff44bf}",
-    "initialCols": 158,
-    "initialRows": 38,
-    "windowRestoreMode": "lastPositionAndSize",
-    "initialPosition": "-3845, 0",
-  
-  
-  
-    "profiles": [
+  "$schema": "https://aka.ms/terminal-profiles-schema",
+
+  "defaultProfile": "{61c54bbd-c2c6-5271-96e7-009a87ff44bf}",
+  "initialCols": 158,
+  "initialRows": 38,
+  "windowRestoreMode": "lastPositionAndSize",
+  "initialPosition": "-3845, 0",
+
+
+
+  "profiles": [
+    {
+      // Make changes here to the powershell.exe profile
+      "acrylicOpacity": 1,
+      //"useAcrylic": true,
+      "background": "#000000",
+      "backgroundImage": "C:\\Appl\\Repos\\dotfiles\\startup\\pwsh.jpg",
+      "backgroundImageOpacity": 0.17,
+      "backgroundImageStechMode": "uniformToFill",
+      "colorScheme": "Campbell",
+      "cursorHeight": 25,
+      "fontFace": "LiberationMono NF",
+      "fontSize": 16,
+      "icon": "ms-appdata:///roaming/pwsh-32.png",
+      "guid": "{61c54bbd-c2c6-5271-96e7-009a87ff44bf}",
+      "name": "PowerShell",
+      "commandline": "powershell.exe",
+      "padding": "10, 10, 0, 10",
+      "hidden": false,
+      "startingDirectory": "c:/appl/repos"
+    },
+    {
+      // Make changes here to the wsl.exe profile
+      "acrylicOpacity": 1,
+      //"useAcrylic": true,
+      "backgroundImage": "C:\\Appl\\Repos\\dotfiles\\startup\\pwsh.jpg",
+      "backgroundImageOpacity": 0.17,
+      "backgroundImageStechMode": "uniformToFill",
+      "guid": "{6f9994f0-4403-5e85-9cce-98e5da3839bb}",
+      "hidden": false,
+      "name": "Bash",
+      "source": "Windows.Terminal.Wsl",
+      "padding": "10, 10, 0, 10",
+      "startingDirectory": "/mnt/c/Appl/repos",
+      "colorScheme": "Campbell",
+      "cursorHeight": 25,
+      "fontFace": "Fira Code",
+      "fontSize": 16
+    },
+    {
+      "guid": "{b453ae62-4e3d-5e58-b989-0a998ec441b8}",
+      "hidden": false,
+      "name": "Azure Cloud Shell",
+      "source": "Windows.Terminal.Azure"
+    },
       {
-        // Make changes here to the powershell.exe profile
-        "acrylicOpacity": 0.5,
-        "background": "#012456",
-        "backgroundImage": "C:\\Appl\\Repos\\dotfiles\\startup\\terminal_wallpaper_022.jpg",
-        "backgroundImageOpacity": 1,
-        "backgroundImageStechMode": "uniformToFill",
-        "colorScheme": "Campbell",
-        "cursorHeight": 25,
-        "fontFace": "LiberationMono NF",
-        "fontSize": 16,
-        "icon": "ms-appdata:///roaming/pwsh-32.png",
-        "guid": "{61c54bbd-c2c6-5271-96e7-009a87ff44bf}",
-        "name": "PowerShell",
-        "commandline": "powershell.exe",
-        "padding": "10, 10, 0, 10",
-        "hidden": false,
-        "startingDirectory": "%USERPROFILE%/Documents/sdp"
-      },
-      {
-        "guid": "{6f9994f0-4403-5e85-9cce-98e5da3839bb}",
-        "hidden": false,
-        "name": "Bash",
-        "source": "Windows.Terminal.Wsl",
-        "padding": "10, 10, 0, 10",
-        "startingDirectory": "C:/Appl/repos",
-        "backgroundImageStechMode": "uniformToFill",
-        "colorScheme": "Campbell",
-        "cursorHeight": 25,
-        "fontFace": "Fira Code",
-        "fontSize": 16
-      },
-      {
-        "guid": "{b453ae62-4e3d-5e58-b989-0a998ec441b8}",
-        "hidden": false,
-        "name": "Azure Cloud Shell",
-        "source": "Windows.Terminal.Azure"
+          "guid": "{c6eaf9f4-32a7-5fdc-b5cf-066e8a4b1e40}",
+          "hidden": false,
+          "name": "Ubuntu-18.04",
+          "source": "Windows.Terminal.Wsl"
       }
-    ],
+  ],
   
     // Add custom color schemes to this array
     "schemes": [],
