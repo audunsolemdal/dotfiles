@@ -79,6 +79,15 @@ function KDown($name)
     kubectl scale deployments -n $n --replicas=0 --all
 }
 
+function KRe($name)
+{
+    $m = kubectl get deployments --all-namespaces | Select-String -Pattern $name -SimpleMatch -CaseSensitive | Out-String | %{$_.split(" ")[0]}
+    $n = $m.Substring(2)
+
+    kubectl scale deployments -n $n --replicas=0 --all
+    kubectl scale deployments -n $n --replicas=1 --all
+}
+
 function KCon($con)
 {
     $o = "sdpaks-$con-k8s"
