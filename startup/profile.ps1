@@ -206,6 +206,10 @@ New-BashStyleAlias pull "git pull"
 New-BashStyleAlias recent "git for-each-ref --sort -committerdate refs/heads/"
 New-BashStyleAlias glog "git log --graph --pretty oneline --abbrev-commit --decorate"
 
+# Speical commands
+
+New-BashStyleAlias prev "Get-Content (Get-PSReadlineOption).HistorySavePath"
+
 
 function reset(){
     [CmdletBinding()]
