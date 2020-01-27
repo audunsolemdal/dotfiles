@@ -55,10 +55,10 @@ echo "
 
         # ALIASES
         # container aliases
-        alias d ="docker"
-        alias doc ="docker-compose"
-        alias k ="kubectl"
-        #alias fsync = "fluxctl sync --k8s-fwd-ns flux"
+        alias d="docker"
+        alias doc="docker-compose"
+        alias k="kubectl"
+        #alias fsync ="fluxctl sync --k8s-fwd-ns flux"
 
 
         # ls aliases
@@ -100,7 +100,7 @@ echo "
         alias recent="git for-each-ref --sort -committerdate refs/heads/"
         alias glog="git log --graph --pretty oneline --abbrev-commit --decorate"
         alias add="gadd"
-       #alias com ="gcom"
+        alias com="gcom"
 
         # Others
         alias editbash="nano ${HOME}/.bashrc"
