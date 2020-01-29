@@ -104,6 +104,12 @@
       {
         "command": "prevTab",
         "keys": [
+          "ctrl+shift+tab"
+        ]
+      },
+      {
+        "command": "nextTab",
+        "keys": [
           "ctrl+tab"
         ]
       },
@@ -147,6 +153,30 @@
         "command": "switchToTab3",
         "keys": [
           "ctrl+4"
+        ]
+      },
+      {
+        "command": "switchToTab4",
+        "keys": [
+          "ctrl+5"
+        ]
+      },
+      {
+        "command": "switchToTab5",
+        "keys": [
+          "ctrl+6"
+        ]
+      },
+      {
+        "command": "switchToTab6",
+        "keys": [
+          "ctrl+7"
+        ]
+      },
+      {
+        "command": "switchToTab7",
+        "keys": [
+          "ctrl+8"
         ]
       },
       {
