@@ -6,7 +6,8 @@ cd "C:\Appl\repos"
 
 # Critical Modules
 
-Import-Module "Terminal-icons"
+#Import-Module "Terminal-icons"
+Set-Theme Paradox 
 
 # Alias
 
