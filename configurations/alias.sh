@@ -52,6 +52,29 @@ echo "
             git commit -m $2
         }
 
+        function KCon()
+        {
+            O="sdpaks-$1-k8s"
+            kubectl config use-context $O
+
+            if [ $? -eq 0 ]; then
+            echo  "Currently in $1 cluster"
+            fi
+        }
+
+        function KNs()
+        {
+            # always returns true.. need workaround
+            kubectl config set-context --current --namespace=$1
+           
+            if [ $? -eq 0 ]; then
+            CON=$(kubectl config current-context)  
+            echo "Currently at $1 namespace in $CON cluster"
+             fi
+        }
+
+        alias kns="KNs"
+        alias kcon="KCon"
 
         # ALIASES
         # container aliases

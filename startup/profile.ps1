@@ -327,8 +327,3 @@ function dirs
         Get-ChildItem -Recurse | Foreach-Object FullName
     }
 }
-
-#prompt: credit @Chris Dent - indented-automation
-
-
-}
