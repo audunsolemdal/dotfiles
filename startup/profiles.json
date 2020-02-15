@@ -40,7 +40,7 @@
       // Make changes here to the wsl.exe profile
       "acrylicOpacity": 1,
       //"useAcrylic": true,
-      "backgroundImage": "C:\\Appl\\Repos\\dotfiles\\startup\\pwsh.jpg",
+      "backgroundImage": "C:\\Appl\\Repos\\dotfiles\\startup\\linux.jpg",
       "backgroundImageOpacity": 0.17,
       "backgroundImageStechMode": "uniformToFill",
       "guid": "{6f9994f0-4403-5e85-9cce-98e5da3839bb}",
