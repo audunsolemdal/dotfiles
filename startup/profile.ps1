@@ -2,7 +2,6 @@
 
 # Default folder
 $env:HOME = "C:\Appl"
-cd "C:\Appl\repos"
 
 # Critical Modules
 

@@ -10,5 +10,4 @@ copy ".\startup\profiles.json" "%LOCALAPPDATA%\Packages\Microsoft.WindowsTermina
 #PowerShell -Command "Set-ExecutionPolicy RemoteSigned"
 PowerShell -Command "& {c:\appl\repos\dotfiles\startup\start.ps1}"
 
-
 exit
