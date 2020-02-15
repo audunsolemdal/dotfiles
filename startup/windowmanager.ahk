@@ -10,11 +10,10 @@ WinMove, 3840, 0 ; Chrome on right monitor
 
 Run wt `; new-tab -p "powershell" -d C:\appl; new-tab -p "powershell" -d C:\appl; new-tab -p "wsl" -d /mnt/c/appl/repos/sdp-flux; new-tab -p "wsl"; new-tab -p "wsl"; focus-tab -t 0
 WinMove, 0, 0 ; Terminal on laptop screen (left)
-Sleep 2000
+Sleep 5000
 
 Process, Wait, code.exe
 WinMaximize
-
 
 ;switch to next virtual desktop
 Send ^#{Right}
@@ -27,10 +26,11 @@ run outlook.exe
 Process, Wait, outlook.exe
 WinMaximize
 
-Sleep 1000
+Sleep 5000
 
 ;switch to default virtual desktop
 Send ^#{Left}
 
 Send ^#{Left}
 Process, Close, cmd.exe
+Process, Close, conhost.exe
