@@ -107,6 +107,7 @@ echo "
         alias ...="cd ../.."
         alias ....="cd ../../.."
         alias .....="cd ../../../.."
+        alias cl="cd $_" # cd to last argument in previous command
 
         #CD to Specific folders
 

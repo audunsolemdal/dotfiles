@@ -20,9 +20,9 @@ Send ^#{Right}
 
 ; Opening apps on communication desktop
 
+run outlook.exe
 Run slack://
 run lync.exe ; Skype for Business
-run outlook.exe
 Process, Wait, outlook.exe
 WinMaximize
 

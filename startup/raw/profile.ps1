@@ -179,7 +179,7 @@ function FSync()
 function New-BashStyleAlias([string]$name, [string]$command)
 {
     $sb = [scriptblock]::Create($command)
-    New-Item "Function:\global:$name" -Value $sb | Out-Null
+    New-Item "Function:\global:$name" -Value $sb -Force | Out-Null
 }
 
 # Quick Folder movement
@@ -187,6 +187,7 @@ New-BashStyleAlias .. 'cd ..'
 New-BashStyleAlias ... "cd ../../"
 New-BashStyleAlias .... "cd ../../../"
 New-BashStyleAlias ..... "cd ../../../../"
+New-BashStyleAlias cl "cd $$" # cd to last argument of previous folder
 
 # CD to Specific folders
 New-BashStyleAlias home 'cd ~'
@@ -307,13 +308,25 @@ function clone(){
 # Open current repo and branch on Github
 function remote(){
 
+    [CmdletBinding()]
+    param (
+          [Parameter(Mandatory=$false, ParameterSetName="Default", Position=0)]
+          [switch] $Repo,
+          [Parameter(Mandatory=$false, ParameterSetName="Default", Position=1)]
+          [switch] $LastCommit
+    )
+
     $rawurl = git remote get-url --all origin
     $url = $rawurl.Substring(0, $rawurl.lastIndexOf('.'))
 
     $branch = git rev-parse --abbrev-ref HEAD
     $head = git rev-parse --short HEAD
 
-    Start-Process chrome.exe $url/tree/$branch, $url/commits/$branch, $url/commit/$head
+    if ($Repo) {$1 = "$url/tree/$branch"}
+    $2 = "$url/commits/$branch"
+    if ($LastCommit) {$3 = "$url/commit/$head"}
+
+    Start-Process chrome.exe $1, $2, $3
 }
 
 ## Git branch switching
