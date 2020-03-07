@@ -52,6 +52,17 @@ echo "
             git commit -m $2
         }
 
+        function remote(){
+
+            rawurl = git remote get-url --all origin
+            url = cut -d '.' -f 2 $rawurl
+
+            branch = git rev-parse --abbrev-ref HEAD
+            head = git rev-parse --short HEAD
+
+            '/mnt/c/Program Files (x86)/Google/Chrome/Application/chrome.exe' $url/tree/$branch, $url/commits/$branch, $url/commit/$head
+        }
+
         function KCon()
         {
             O="sdpaks-$1-k8s"
@@ -124,6 +135,8 @@ echo "
         alias glog="git log --graph --pretty oneline --abbrev-commit --decorate"
         alias add="gadd"
         alias com="gcom"
+        alias clone="git clone"
+        alias merge="git merge"
 
         # Others
         alias editbash="nano ${HOME}/.bashrc"
@@ -201,3 +214,16 @@ echo "
                 alias cmdc="/mnt/c/Windows/System32/cmd.exe /c"
             } >>"${HOME}"/.zshrc
         fi
+
+        prompt_k8s(){
+            k8s_current_context=$(kubectl config current-context 2> /dev/null)
+            if [[ $? -eq 0 ]] ; then echo -e "(${k8s_current_context}) "; fi
+
+            IFS='-' read -ra ADDR <<< "$IN"
+                for i in "${ADDR[@]}"; do
+                    # process "$i"
+                done
+        }
+            
+            
+            PS1+='$(prompt_k8s)'

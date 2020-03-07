@@ -16,7 +16,7 @@ loopFunction(bool) {
     if [ \"${bool}\" == false ]; then
       break
     fi
-    lt --port 2200 -s matheusrv;
+    lt --port 2200 -s solomson;
     sleep 10;
   done
 }

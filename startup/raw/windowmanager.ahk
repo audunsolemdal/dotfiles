@@ -8,7 +8,7 @@ WinMove, 1920, 0 ; Code on left monitor
 Run chrome.exe google.com portal.azure.com https://github.com/equinor/sdp-flux/tree/dev git.equinor.com https://stackoverflow.com/search?q= youtube.com 
 WinMove, 3840, 0 ; Chrome on right monitor
 
-Run wt `; new-tab -p "powershell" -d C:\appl; new-tab -p "powershell" -d C:\appl; new-tab -p "Bash"; new-tab -p "Bash"; new-tab -p "Bash"; focus-tab -t 0
+Run wt `; new-tab -p "pwsh" -d C:\appl; new-tab -p "pwsh" -d C:\appl; new-tab -p "Bash"; new-tab -p "Bash"; new-tab -p "Bash"; focus-tab -t 0
 WinMove, 0, 0 ; Terminal on laptop screen (left)
 Sleep 10000
 

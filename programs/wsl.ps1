@@ -42,7 +42,7 @@ Ubuntu1804 run apt upgrade -y
 #Ubuntu1804 run usermod -aG sudo $ComputerName
 #Ubuntu1804 run config --default-user $ComputerName
 
-Ubuntu1804 run 'git clone https://github.com/MatheusRV/dotfiles && chmod 777 -R dotfiles && cd dotfiles && ./install.sh'
+Ubuntu1804 run 'git clone https://github.com/solomson/dotfiles && chmod 777 -R dotfiles && cd dotfiles && ./install.sh'
 
 $Programs = @(
     "vcxsrv"

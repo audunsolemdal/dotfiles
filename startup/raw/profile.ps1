@@ -1,4 +1,4 @@
-# cp ./startup/profile.ps1 $PSHOME\Profile.ps1 (all users, allhosts)
+# cp ./startup/profile.ps1 $PSHOME\Microsoft.PowerShell_profile.ps1 (all users, allhosts)
 
 # Default folder
 $env:HOME = "C:\Appl"
@@ -286,6 +286,35 @@ function reset(){
     status
 }
 
+function merge(){
+    [CmdletBinding()]
+    param (
+          [Parameter(Mandatory=$true, ParameterSetName="Default", Position=0)]
+          [string] $Name
+    )
+   git merge $Name
+}
+
+function clone(){
+    [CmdletBinding()]
+    param (
+          [Parameter(Mandatory=$true, ParameterSetName="Default", Position=0)]
+          [string] $Name
+    )
+   git clone $Name
+}
+
+# Open current repo and branch on Github
+function remote(){
+
+    $rawurl = git remote get-url --all origin
+    $url = $rawurl.Substring(0, $rawurl.lastIndexOf('.'))
+
+    $branch = git rev-parse --abbrev-ref HEAD
+    $head = git rev-parse --short HEAD
+
+    Start-Process chrome.exe $url/tree/$branch, $url/commits/$branch, $url/commit/$head
+}
 
 ## Git branch switching
 New-BashStyleAlias master "git checkout master"

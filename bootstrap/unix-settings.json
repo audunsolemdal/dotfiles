@@ -1,7 +1,7 @@
 {
   "personal": {
     "name": "Audun L. Solemdal",
-    "email": "matheusrv@email.com",
+    "email": "solomson@email.com",
     "githubuser": "solomson",
     "defaultfolder": "/mnt/c/appl/Dev"
   },
@@ -177,7 +177,7 @@
     }
   ],
   "configurations": {
-    "debug": "false",
+    "debug": "true",
     "purge": "false"
   }
 }

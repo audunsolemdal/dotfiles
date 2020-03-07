@@ -14,7 +14,7 @@
 
   "profiles": [
     {
-      // Make changes here to the powershell.exe profile
+      // Make changes here to the pwsh.exe profile
       "acrylicOpacity": 1,
       //"useAcrylic": true,
       "background": "#000000",
@@ -28,7 +28,7 @@
       "icon": "ms-appdata:///roaming/pwsh-32.png",
       "guid": "{61c54bbd-c2c6-5271-96e7-009a87ff44bf}",
       "name": "PowerShell",
-      "commandline": "powershell.exe",
+      "commandline": "pwsh.exe",
       "padding": "10, 10, 0, 10",
       "hidden": false,
       "startingDirectory": "c:/appl/repos"

@@ -229,10 +229,10 @@ EOF
             git config --global user.name "${username}"
             jq '.personal.name = "'"${username}"'"' "${PREVIOUS_PWD}"/bootstrap/unix-settings.json | sponge "${PREVIOUS_PWD}"/bootstrap/unix-settings.json
             unset username
-            printf "\n Your E-Mail (Default: matheusrv@email.com): "
+            printf "\n Your E-Mail (Default: solomson@email.com): "
             read -r email
             if [ -z "${email}" ]; then
-                email="matheusrv@email.com"
+                email="solomson@email.com"
                 echo "$email"
             fi
             git config --global user.email "${email}"
@@ -241,10 +241,10 @@ EOF
             fi
             jq '.personal.email = "'"${email}"'"' "${PREVIOUS_PWD}"/bootstrap/unix-settings.json | sponge "${PREVIOUS_PWD}"/bootstrap/unix-settings.json
             unset email
-            printf "\n Your GitHub Username (Default: MatheusRV): "
+            printf "\n Your GitHub Username (Default: solomson): "
             read -r githubuser
             if [ -z "${githubuser}" ]; then
-                githubuser="MatheusRV"
+                githubuser="solomson"
                 echo "$githubuser"
             fi
             jq '.personal.githubuser = "'"${githubuser}"'"' "${PREVIOUS_PWD}"/bootstrap/unix-settings.json | sponge "${PREVIOUS_PWD}"/bootstrap/unix-settings.json
