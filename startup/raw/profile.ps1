@@ -3,10 +3,17 @@
 # Default folder
 $env:HOME = "C:\Appl"
 
-# Critical Modules
 
-#Import-Module "Terminal-icons"
-Set-Theme Paradox 
+# Hold control to skip import of modules, credit @VladimirReshetnikov
+Add-Type -AssemblyName WindowsBase
+Add-Type -AssemblyName PresentationCore
+if (-not [Windows.Input.Keyboard]::IsKeyDown([System.Windows.Input.Key]::LeftCtrl))
+{
+    # Critical Modules
+    #Import-Module "Terminal-icons"
+    Set-Theme Paradox 
+}
+
 
 # Alias
 
