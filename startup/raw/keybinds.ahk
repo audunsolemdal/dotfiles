@@ -47,21 +47,6 @@ CapsLock & WheelUp::
     return
 }
 
-
-; Save time on ssh commands
-IfWinActive, Adminstrator: Windows Powershell
-{
-    ::ssh::ssh -l auls 
-    return
-}
-
-; Save time on ssh commands
-IfWinActive, Adminstrator: Windows Powershell
-{
-    ::sudo s::sudo su - 
-    return
-}
-
 ; Cleanup for calculators
 #c::
 if WinExist("Kalkulator") || if WinExist("Calculator")
