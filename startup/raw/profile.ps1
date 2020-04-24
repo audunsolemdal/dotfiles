@@ -86,6 +86,10 @@ function KDown($name)
     kubectl scale deployments -n $n --replicas=0 --all
 }
 
+$packs = clist -l
+$packs |  % {$_.split(" ")[0]} | % { choco upgrade $_ -y }
+
+
 function KRe($name)
 {
     $m = kubectl get deployments --all-namespaces | Select-String -Pattern $name -SimpleMatch -CaseSensitive | Out-String | %{$_.split(" ")[0]}
