@@ -1,4 +1,4 @@
-# cp ./startup/profile.ps1 $PSHOME\Microsoft.PowerShell_profile.ps1 (all users, allhosts)
+# cp ./startup/raw/profile.ps1 $PROFILE.AllUsersAllHosts
 
 # Default folder
 $env:HOME = "C:\Appl"
@@ -85,9 +85,6 @@ function KDown($name)
 
     kubectl scale deployments -n $n --replicas=0 --all
 }
-
-$packs = clist -l
-$packs |  % {$_.split(" ")[0]} | % { choco upgrade $_ -y }
 
 
 function KRe($name)
