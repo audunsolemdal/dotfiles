@@ -223,7 +223,7 @@ New-BashStyleAlias fetch "git fetch"
 New-BashStyleAlias push "git push origin head"
 New-BashStyleAlias pull "git pull"
 New-BashStyleAlias recent "git for-each-ref --sort -committerdate refs/heads/"
-New-BashStyleAlias glog "git log --graph --pretty oneline --abbrev-commit --decorate"
+New-BashStyleAlias glog "git log --graph --pretty --oneline --abbrev-commit --decorate"
 
 # Speical commands
 
