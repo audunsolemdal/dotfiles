@@ -206,6 +206,7 @@ New-BashStyleAlias certs 'cd c:/appl/certs'
 New-BashStyleAlias dotfiles 'cd c:/appl/repos/dotfiles'
 New-BashStyleAlias sdp-flux 'cd c:/appl/repos/sdp-flux'
 New-BashStyleAlias sdp-aks 'cd c:/appl/repos/sdp-aks'
+New-BashStyleAlias environments 'cd c:/appl/repos/environments'
 
 Set-Alias flux sdp-flux
 Set-Alias aks sdp-aks
@@ -350,6 +351,8 @@ function remote(){
 New-BashStyleAlias master "git checkout master"
 New-BashStyleAlias prod "git checkout prod"
 New-BashStyleAlias dev "git checkout dev"
+New-BashStyleAlias production "git checkout production"
+New-BashStyleAlias development "git checkout development"
 
 # Others
 New-BashStyleAlias editgit "code %homepath%/.gitconfig" # ~ not working
