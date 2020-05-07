@@ -325,7 +325,16 @@ function remote(){
     )
 
     $rawurl = git remote get-url --all origin
+
+    if ($rawurl -like "*.git")
+
+    {
     $url = $rawurl.Substring(0, $rawurl.lastIndexOf('.'))
+
+    }
+    else {
+        $url = $rawurl
+    }
 
     $branch = git rev-parse --abbrev-ref HEAD
     $head = git rev-parse --short HEAD
