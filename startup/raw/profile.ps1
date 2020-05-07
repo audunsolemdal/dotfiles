@@ -380,3 +380,9 @@ function dirs
         Get-ChildItem -Recurse | Foreach-Object FullName
     }
 }
+
+function cc { 
+    
+    Invoke-History | Set-Clipboard
+
+}
