@@ -146,14 +146,6 @@ function docup(){
 
 Set-Alias doup docup
 
-function dops(){
-    [CmdletBinding()]
-    param (
-          [string] $name
-    )
-       docker ps
-}
-
 function docdown(){
     [CmdletBinding()]
     param (
