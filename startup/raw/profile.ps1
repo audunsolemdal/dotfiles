@@ -64,7 +64,7 @@ function Get-AKSCredentials()
 
 function HelmDel($name)
 {
-    $m = helm ls | Select-String -Pattern $name -SimpleMatch -CaseSensitive | Out-String
+    $m = helm ls | Select-String -Pattern $name -SimpleMatch -NoEmphasis | Out-String
     # $n = $m -replace '(^\s+|\s+$)','' -replace '\s+',' ' | %{$_.split(" ")[10]}
 
     helm del --purge $name
@@ -72,7 +72,7 @@ function HelmDel($name)
 
 function KUp($name)
 {
-    $m = kubectl get deployments --all-namespaces | Select-String -Pattern $name -SimpleMatch -CaseSensitive | Out-String | %{$_.split(" ")[0]}
+    $m = kubectl get deployments --all-namespaces | Select-String -Pattern $name -SimpleMatch -NoEmphasis | Out-String | %{$_.split(" ")[0]}
     $n = $m.Substring(2)
 
     kubectl scale deployments -n $n --replicas=1 --all
@@ -80,7 +80,7 @@ function KUp($name)
 
 function KDown($name)
 {
-    $m = kubectl get deployments --all-namespaces | Select-String -Pattern $name -SimpleMatch -CaseSensitive | Out-String | %{$_.split(" ")[0]}
+    $m = kubectl get deployments --all-namespaces | Select-String -Pattern $name -SimpleMatch -NoEmphasis | Out-String | %{$_.split(" ")[0]}
     $n = $m.Substring(2)
 
     kubectl scale deployments -n $n --replicas=0 --all
@@ -89,7 +89,7 @@ function KDown($name)
 
 function KRe($name)
 {
-    $m = kubectl get deployments --all-namespaces | Select-String -Pattern $name -SimpleMatch -CaseSensitive | Out-String | %{$_.split(" ")[0]}
+    $m = kubectl get deployments --all-namespaces | Select-String -Pattern $name -SimpleMatch -NoEmphasis | Out-String | %{$_.split(" ")[0]}
     $n = $m.Substring(2)
 
     kubectl scale deployments -n $n --replicas=0 --all
