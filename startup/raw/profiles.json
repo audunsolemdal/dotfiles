@@ -7,13 +7,20 @@
 {
   "$schema": "https://aka.ms/terminal-profiles-schema",
 
-  "defaultProfile": "{61c54bbd-c2c6-5271-96e7-009a87ff44bf}",
+  "defaultProfile": "{574e775e-4f2a-5b96-ac1e-a2962a402336}",
   "initialCols": 128,
   "initialRows": 38,
   "windowRestoreMode": "lastPositionAndSize",
 
+  // Selection
+  "copyOnSelect": false,
+  "copyFormatting": true,
+  "wordDelimiters": " /\\()\"'-.,:;<>~!@#$%^&*|+=[]{}~?\u2502",
+
   "profiles": [
+
     {
+      "guid": "{574e775e-4f2a-5b96-ac1e-a2962a402336}",
       // Make changes here to the pwsh.exe profile
       "acrylicOpacity": 1,
       //"useAcrylic": true,
@@ -26,43 +33,47 @@
       "fontFace": "LiterationMono NF",
       "fontSize": 16,
       "icon": "ms-appdata:///roaming/pwsh-32.png",
-      "guid": "{61c54bbd-c2c6-5271-96e7-009a87ff44bf}",
-      "name": "PowerShell",
-      "commandline": "pwsh.exe",
+      "name": "PowerShell 7.x",
       "padding": "10, 10, 0, 10",
       "hidden": false,
-      "startingDirectory": "c:/appl/repos"
+      "startingDirectory": "c:/appl/repos",
+      "source": "Windows.Terminal.PowershellCore"
     },
     {
+      "guid": "{c6eaf9f4-32a7-5fdc-b5cf-066e8a4b1e40}",
+      "hidden": true // hide bugged ubuntu 18.04
+    },
+    {
+      "guid": "{0caa0dad-35be-5f56-a8ff-afceeeaa6101}",
+      "hidden": true // hide CMD
+    },
+    {
+      "guid": "{b453ae62-4e3d-5e58-b989-0a998ec441b8}",
+      "hidden": true // hide azure cloud shell
+    },
+
+    {
+      "guid": "{61c54bbd-c2c6-5271-96e7-009a87ff44bf}",
+      "hidden": true // hide windows powershell
+    },
+    {
+      "guid": "{2c4de342-38b7-51cf-b940-2309a097f518}",
+      "hidden": false,
+      "name": "Ubuntu",
+      "source": "Windows.Terminal.Wsl",
       // Make changes here to the wsl.exe profile
       "acrylicOpacity": 1,
       //"useAcrylic": true,
       "backgroundImage": "C:\\Appl\\Repos\\dotfiles\\startup\\img\\linux.jpg",
       "backgroundImageOpacity": 0.17,
       "backgroundImageStechMode": "uniformToFill",
-      "guid": "{6f9994f0-4403-5e85-9cce-98e5da3839bb}",
-      "hidden": false,
-      "name": "Bash",
-      "source": "Windows.Terminal.Wsl",
       "padding": "10, 10, 0, 10",
       "startingDirectory": "/mnt/c/Appl/repos",
       "colorScheme": "Campbell",
       "cursorHeight": 25,
       "fontFace": "Fira Code",
       "fontSize": 16
-    },
-    {
-      "guid": "{b453ae62-4e3d-5e58-b989-0a998ec441b8}",
-      "hidden": false,
-      "name": "Azure Cloud Shell",
-      "source": "Windows.Terminal.Azure"
-    },
-      {
-          "guid": "{c6eaf9f4-32a7-5fdc-b5cf-066e8a4b1e40}",
-          "hidden": false,
-          "name": "Ubuntu-18.04",
-          "source": "Windows.Terminal.Wsl"
-      }
+    }
   ],
   
     // Add custom color schemes to this array
@@ -71,147 +82,55 @@
     // Add any keybinding overrides to this array.
     // To unbind a default keybinding, set the command to "unbound"
     "keybindings": [
-  
-      {
-        "command": "splitHorizontal",
-        "keys": [ "ctrl+shift+up" ]
-      },
-      {
-        "command": "splitVertical",
-        "keys": [ "ctrl+shift+right" ]
-      },
-      {
-        "command": "newTab",
-        "keys": [
-          "ctrl+t"
-        ]
-      },
-      {
-        "command": "newTabProfile0",
-        "keys": [
-          "ctrl+shift+1"
-        ]
-      },
-      {
-        "command": "newTabProfile1",
-        "keys": [
-          "ctrl+shift+2"
-        ]
-      },
-      {
-        "command": "prevTab",
-        "keys": [
-          "ctrl+shift+tab"
-        ]
-      },
-      {
-        "command": "nextTab",
-        "keys": [
-          "ctrl+tab"
-        ]
-      },
-      {
-        "command": "openSettings",
-        "keys": [
-          "ctrl+,"
-        ]
-      },
-      {
-        "command": "scrollUp",
-        "keys": [
-          "shift+up"
-        ]
-      },
-      {
-        "command": "scrollUpPage",
-        "keys": [
-          "pgup"
-        ]
-      },
-      {
-        "command": "switchToTab0",
-        "keys": [
-          "ctrl+1"
-        ]
-      },
-      {
-        "command": "switchToTab1",
-        "keys": [
-          "ctrl+2"
-        ]
-      },
-      {
-        "command": "switchToTab2",
-        "keys": [
-          "ctrl+3"
-        ]
-      },
-      {
-        "command": "switchToTab3",
-        "keys": [
-          "ctrl+4"
-        ]
-      },
-      {
-        "command": "switchToTab4",
-        "keys": [
-          "ctrl+5"
-        ]
-      },
-      {
-        "command": "switchToTab5",
-        "keys": [
-          "ctrl+6"
-        ]
-      },
-      {
-        "command": "switchToTab6",
-        "keys": [
-          "ctrl+7"
-        ]
-      },
-      {
-        "command": "switchToTab7",
-        "keys": [
-          "ctrl+8"
-        ]
-      },
-      {
-        "command": "moveFocusUp",
-        "keys": [ "ctrl+alt+up" ]
-      },
-      {
-        "command": "moveFocusDown",
-        "keys": [ "ctrl+alt+down" ]
-      },
-      {
-        "command": "moveFocusLeft",
-        "keys": [ "ctrl+alt+left" ]
-      },
-      {
-        "command": "moveFocusRight",
-        "keys": [ "ctrl+alt+right" ]
-      },
-      {
-        "command": "resizePaneUp",
-        "keys": [ "shift+alt+up" ]
-      },
-      {
-        "command": "resizePaneDown",
-        "keys": [ "shift+alt+down" ]
-      },
-      {
-        "command": "resizePaneLeft",
-        "keys": [ "shift+alt+left" ]
-      },
-      {
-        "command": "resizePaneRight",
-        "keys": [ "shift+alt+right" ]
-      },
-      {
-        "command": "closePane",
-        "keys": [ "ctrl+w" ]
-      }
+
+      // Settings
+      { "command": "openSettings", "keys": "ctrl+," },
+
+      // Tabs general
+      { "command": "newTab", "keys": "ctrl+t" },
+      { "command": "closePane", "keys": "ctrl+w" },
+      { "command": "nextTab", "keys": "ctrl+tab" },
+      { "command": "prevTab", "keys": "ctrl+shift+tab" },
+
+      // Tab switches
+      { "command": { "action": "switchToTab", "index": 0 }, "keys": "ctrl+1" },
+      { "command": { "action": "switchToTab", "index": 1 }, "keys": "ctrl+2" },
+      { "command": { "action": "switchToTab", "index": 2 }, "keys": "ctrl+3" },
+      { "command": { "action": "switchToTab", "index": 3 }, "keys": "ctrl+4" },
+      { "command": { "action": "switchToTab", "index": 4 }, "keys": "ctrl+5" },
+      { "command": { "action": "switchToTab", "index": 5 }, "keys": "ctrl+6" },
+      { "command": { "action": "switchToTab", "index": 6 }, "keys": "ctrl+7" },
+      { "command": { "action": "switchToTab", "index": 7 }, "keys": "ctrl+8" },
+      { "command": { "action": "switchToTab", "index": 8 }, "keys": "ctrl+9" },
+
+      // Clipboard Integration
+      { "command": { "action": "copy", "singleLine": false }, "keys": "ctrl+shift+c" },
+      { "command": { "action": "copy", "singleLine": false }, "keys": "ctrl+insert" },
+      { "command": "paste", "keys": "ctrl+shift+v" },
+      { "command": "paste", "keys": "shift+insert" },
+
+      // Split
+      { "command": { "action": "splitPane", "split": "horizontal" }, "keys": "alt+shift+up" },
+      { "command": { "action": "splitPane", "split": "vertical" }, "keys": "alt+shift+right" },
+
+      // Scrollback
+      { "command": "scrollDown", "keys": "shift+down" },
+      { "command": "scrollDownPage", "keys": "pgdn" },
+      { "command": "scrollUp", "keys": "shift+up" },
+      { "command": "scrollUpPage", "keys": "pgup" },
+
+      // Focus
+      { "command": { "action": "moveFocus", "direction": "down" }, "keys": "alt+down" },
+      { "command": { "action": "moveFocus", "direction": "left" }, "keys": "alt+left" },
+      { "command": { "action": "moveFocus", "direction": "right" }, "keys": "alt+right" },
+      { "command": { "action": "moveFocus", "direction": "up" }, "keys": "alt+up" },
+
+      // Resize pane
+      { "command": { "action": "resizePane", "direction": "down" }, "keys": "alt+shift+down" },
+      { "command": { "action": "resizePane", "direction": "left" }, "keys": "alt+shift+left" },
+      { "command": { "action": "resizePane", "direction": "right" }, "keys": "alt+shift+right" },
+      { "command": { "action": "resizePane", "direction": "up" }, "keys": "alt+shift+up" }
+
     ]
   }
   
