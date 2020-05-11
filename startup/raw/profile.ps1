@@ -41,7 +41,7 @@ function AzLogin()
 
 function Set-AzSub()
 {
-    az account set --subscription "SDP Tools"
+    az account set --subscription "S942-SDP-Tools"
 }
 
 function Get-AzRgContent($rgname)
