@@ -22,6 +22,7 @@ Set-Alias d docker
 Set-Alias doc docker-compose
 Set-Alias k kubectl.exe
 Set-Alias he helm.exe
+New-Alias which get-command
 
 # Bash functionality
 
