@@ -177,7 +177,7 @@
     }
   ],
   "configurations": {
-    "debug": "true",
+    "debug": "false",
     "purge": "false"
   }
 }

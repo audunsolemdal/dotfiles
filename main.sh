@@ -14,7 +14,7 @@ EOF
 	if [ -d "${HOME}"/tmp ]; then
 		sudo rm -f -R "${HOME}"/tmp
 	fi
-    HOME=/mnt/c/appl
+    HOME=/home/auls
 	mkdir -p "${HOME}"/tmp
 	cd "${HOME}"/tmp || return
     sudo apt -qq update
@@ -77,7 +77,7 @@ EOF
         trap 2
         unset apps
 
-git clone https://github.com/zsh-users/zsh-autosuggestions ~/.zsh/zsh-autosuggestions
+#git clone https://github.com/zsh-users/zsh-autosuggestions ~/.zsh/zsh-autosuggestions
 
         # zsh as default shell
 cat << EOF >> ~/.bashrc
