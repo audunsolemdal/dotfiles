@@ -11,6 +11,7 @@
   "initialCols": 128,
   "initialRows": 38,
   "windowRestoreMode": "lastPositionAndSize",
+  "useTabSwitcher": true,
 
   // Selection
   "copyOnSelect": false,
@@ -31,31 +32,13 @@
       "colorScheme": "Campbell",
       "cursorHeight": 25,
       "fontFace": "LiterationMono NF",
-      "fontSize": 16,
+      "fontSize": 15,
       "icon": "ms-appdata:///roaming/pwsh-32.png",
       "name": "PowerShell 7.x",
       "padding": "10, 10, 0, 10",
       "hidden": false,
       "startingDirectory": "c:/appl/repos",
       "source": "Windows.Terminal.PowershellCore"
-    },
-    {
-      "guid": "{2c4de342-38b7-51cf-b940-2309a097f518}",
-      "hidden": false,
-      "name": "Ubuntu",
-      "source": "Windows.Terminal.Wsl",
-      // Make changes here to the wsl.exe profile
-      "acrylicOpacity": 1,
-      //"useAcrylic": true,
-      "backgroundImage": "C:\\Appl\\Repos\\dotfiles\\startup\\img\\linux.jpg",
-      "backgroundImageOpacity": 0.17,
-      "backgroundImageStechMode": "uniformToFill",
-      "padding": "10, 10, 0, 10",
-      "startingDirectory": "/mnt/c/Appl/repos",
-      "colorScheme": "Campbell",
-      "cursorHeight": 25,
-      "fontFace": "Fira Code",
-      "fontSize": 16
     },
     {
       "guid": "{c6eaf9f4-32a7-5fdc-b5cf-066e8a4b1e40}",
@@ -72,6 +55,24 @@
     {
       "guid": "{61c54bbd-c2c6-5271-96e7-009a87ff44bf}",
       "hidden": true // hide windows powershell
+    },
+    {
+      "guid": "{07b52e3e-de2c-5db4-bd2d-ba144ed6c273}",
+      "hidden": false,
+      "name": "Ubuntu-20.04",
+      "source": "Windows.Terminal.Wsl",
+      // Make changes here to the wsl.exe profile
+      "acrylicOpacity": 1,
+      //"useAcrylic": true,
+      "backgroundImage": "C:\\Appl\\Repos\\dotfiles\\startup\\img\\linux.jpg",
+      "backgroundImageOpacity": 0.17,
+      "backgroundImageStechMode": "uniformToFill",
+      "padding": "10, 10, 0, 10",
+      "startingDirectory": "/mnt/c/Appl/repos",
+      "colorScheme": "Campbell",
+      "cursorHeight": 25,
+      "fontFace": "mesloLGS NF",
+      "fontSize": 15
     }
   ],
   
@@ -84,6 +85,10 @@
 
       // Settings
       { "command": "openSettings", "keys": "ctrl+," },
+      { "command": "commandPalette", "keys": "ctrl+shift+p" },
+      {  "command": "toggleFocusMode", "keys": "alt+f" },
+      { "command": { "action": "setTabColor", "color": "#ffffff" }, "keys": "ctrl+a" },
+      { "command": "toggleRetroEffect", "keys": "ctrl+d" },
 
       // Tabs general
       { "command": "newTab", "keys": "ctrl+t" },
