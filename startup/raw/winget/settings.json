@@ -1,0 +1,10 @@
+{
+    "$schema": "https://aka.ms/winget-settings.schema.json",
+    
+    "experimentalFeatures": {
+        "experimentalCmd": true,
+        "experimentalArg": true,
+        "list": true,
+        "upgrade": true
+    },
+}
