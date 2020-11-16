@@ -14,7 +14,7 @@ if (-not [Windows.Input.Keyboard]::IsKeyDown([System.Windows.Input.Key]::LeftCtr
     Set-Theme Paradox 
 }
 
-Set-PSReadLineOption -PredictionSource History 
+Set-PSReadLineOption -PredictionSource HistoryAndPlugin
 
 # Alias
 
