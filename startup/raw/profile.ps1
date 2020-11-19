@@ -10,7 +10,7 @@ Add-Type -AssemblyName PresentationCore
 if (-not [Windows.Input.Keyboard]::IsKeyDown([System.Windows.Input.Key]::LeftCtrl))
 {
     # Critical Modules
-    #Import-Module "Terminal-icons"
+    Import-Module "Terminal-icons"
     Set-Theme Paradox 
 }
 
