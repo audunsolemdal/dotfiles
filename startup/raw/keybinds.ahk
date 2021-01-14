@@ -47,21 +47,6 @@ CapsLock & WheelUp::
     return
 }
 
-; Cleanup for calculators
-#c::
-if WinExist("Kalkulator") || if WinExist("Calculator")
-{
-    WinActivate  ; Automatically uses the window found above.
-    Send, {Escape}
-    Send, {Enter}
-    return
-}
-else 
-{
-   ; Run, calc.exe
-    return
-}
-
 #n::
 if WinExist("Untitled - Notepad") || if WinExist("*Untitled - Notepad")
 {
@@ -85,3 +70,9 @@ RCtrl::
     Click
     Return
 }
+
+#c::
+	Send ^c
+	ClipWait
+	Clipboard:=Clipboard ""
+Return
