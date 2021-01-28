@@ -9,10 +9,6 @@ return
 CapsLock & p::Suspend ; 
 return
 
-; Always on Top
-^SPACE:: Winset, Alwaysontop, , A ; ctrl + space
-Return
-
 ; Google Search highlighted text
 CapsLock & Space::
 {
