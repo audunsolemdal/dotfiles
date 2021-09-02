@@ -11,7 +11,7 @@ if (-not [Windows.Input.Keyboard]::IsKeyDown([System.Windows.Input.Key]::LeftCtr
 {
     # Critical Modules
     Import-Module "Terminal-icons"
-    Set-Theme Paradox 
+    Set-PoshPrompt Paradox
 }
 
 Set-PSReadLineOption -PredictionSource HistoryAndPlugin
