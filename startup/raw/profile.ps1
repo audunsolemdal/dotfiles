@@ -3,15 +3,13 @@
 # Default folder
 $env:HOME = "C:\Appl"
 
-
 # Hold control to skip import of modules, credit @VladimirReshetnikov
 Add-Type -AssemblyName WindowsBase
 Add-Type -AssemblyName PresentationCore
-if (-not [Windows.Input.Keyboard]::IsKeyDown([System.Windows.Input.Key]::LeftCtrl))
-{
+if (-not [Windows.Input.Keyboard]::IsKeyDown([System.Windows.Input.Key]::LeftCtrl)) {
     # Critical Modules
     Import-Module "Terminal-icons"
-    Set-PoshPrompt Paradox
+    Set-PoshPrompt -Theme C:\appl\repos\dotfiles\startup\oh-my-posh\agnoster-customized.json
 }
 
 Set-PSReadLineOption -PredictionSource HistoryAndPlugin
@@ -27,8 +25,7 @@ New-Alias which get-command
 
 # Bash functionality
 
-function TouchFile ($name)
-{
+function TouchFile ($name) {
     New-Item -Path . -Name $name
 }
 
@@ -36,150 +33,93 @@ Set-Alias -name touch -Value TouchFile
 
 # Azure handy
 
-function AzLogin()
-{
-    az login
-}
-
-function Set-AzSub()
-{
-    az account set --subscription "S942-SDP-Tools"
-}
-
-function Get-AzRgContent($rgname)
-{
-    Get-AzResource -ResourceGroupName $rgname
-}
-
-function List-AzRg()
-{
-    Get-AzResourceGroup | select -Property ResourceGroupName
-}
-
-function Get-AKSCredentials()
-{
-    az aks get-credentials -n sdpaks-prod-k8s -g sdpaks-prod
-    az aks get-credentials -n sdpaks-dev-k8s -g sdpaks-dev
-}
-
 # Containers
 
-function HelmDel($name)
-{
-    $m = helm ls | Select-String -Pattern $name -SimpleMatch -NoEmphasis | Out-String
-    # $n = $m -replace '(^\s+|\s+$)','' -replace '\s+',' ' | %{$_.split(" ")[10]}
-
-    helm del --purge $name
-}
-
-function KUp($name)
-{
-    $m = kubectl get deployments --all-namespaces | Select-String -Pattern $name -SimpleMatch -NoEmphasis | Out-String | %{$_.split(" ")[0]}
+function KUp($name) {
+    $m = kubectl get deployments --all-namespaces | Select-String -Pattern $name -SimpleMatch -NoEmphasis | Out-String | % { $_.split(" ")[0] }
     $n = $m.Substring(2)
 
     kubectl scale deployments -n $n --replicas=1 --all
 }
 
-function KDown($name)
-{
-    $m = kubectl get deployments --all-namespaces | Select-String -Pattern $name -SimpleMatch -NoEmphasis | Out-String | %{$_.split(" ")[0]}
+function KDown($name) {
+    $m = kubectl get deployments --all-namespaces | Select-String -Pattern $name -SimpleMatch -NoEmphasis | Out-String | % { $_.split(" ")[0] }
     $n = $m.Substring(2)
 
     kubectl scale deployments -n $n --replicas=0 --all
 }
 
-
-function KRe($name)
-{
-    $m = kubectl get deployments --all-namespaces | Select-String -Pattern $name -SimpleMatch -NoEmphasis | Out-String | %{$_.split(" ")[0]}
+function KRe($name) {
+    $m = kubectl get deployments --all-namespaces | Select-String -Pattern $name -SimpleMatch -NoEmphasis | Out-String | % { $_.split(" ")[0] }
     $n = $m.Substring(2)
 
     kubectl scale deployments -n $n --replicas=0 --all
     kubectl scale deployments -n $n --replicas=1 --all
 }
 
-function KCon($con)
-{
+function KCon($con) {
     $o = "sdpaks-$con-k8s"
     kubectl config use-context $o
 
-    if ($?){
-    Write-host "Currently in " -NoNewline
-    Write-Host $con -ForegroundColor Green -NoNewline
-    Write-Host " cluster" -ForegroundColor Yellow
+    if ($?) {
+        Write-host "Currently in " -NoNewline
+        Write-Host $con -ForegroundColor Green -NoNewline
+        Write-Host " cluster" -ForegroundColor Yellow
     }
 }
 
-function KNs($name)
-{
+function KNs($name) {
     # always returns true.. nneed workaround
     kubectl config set-context --current --namespace=$name
-    if($?) {
-    $con = kubectl config current-context  
-    Write-host "Currently at " -NoNewline -ForegroundColor Yellow
-    Write-Host  $name -ForegroundColor Cyan -NoNewline
-    Write-Host " namespace in "  -ForegroundColor Yellow -NoNewline
-    Write-Host $con -ForegroundColor Green -NoNewline
-    Write-Host " cluster" -ForegroundColor Yellow
+    if ($?) {
+        $con = kubectl config current-context  
+        Write-host "Currently at " -NoNewline -ForegroundColor Yellow
+        Write-Host  $name -ForegroundColor Cyan -NoNewline
+        Write-Host " namespace in "  -ForegroundColor Yellow -NoNewline
+        Write-Host $con -ForegroundColor Green -NoNewline
+        Write-Host " cluster" -ForegroundColor Yellow
     }
 }
 
-function doexec(){
+
+function dup() {
     [CmdletBinding()]
     param (
-          [string] $name
+        [string] $name
     )
-   try {
-       docker exec -it $name bash
-   }
-   catch {
-    docker exec -it $name sh
-   }
-}
-
-
-function docup(){
-    [CmdletBinding()]
-    param (
-          [string] $name
-    )
-       docker-compose up $name -d
+    docker-compose up $name -d
 }
 
 Set-Alias doup docup
 
-function docdown(){
+function ddown() {
     [CmdletBinding()]
     param (
-          [string] $name
+        [string] $name
     )
-       docker-compose down $name
+    docker-compose down $name
 }
 
-Set-Alias dodown docdown
-
-function kexec(){
+function kexec() {
     [CmdletBinding()]
     param (
-          [string] $name
+        [string] $name
     )
-   try {
-       kubectl exec -it $name bash
-   }
-   catch {
-    kubectl exec -it $name sh
-   }
+    try {
+        kubectl exec -it $name bash
+    }
+    catch {
+        kubectl exec -it $name sh
+    }
 }
 
-function FSync()
-{
+function FSync() {
     fluxctl.exe sync --k8s-fwd-ns flux
 }
 
 # General bash-style aliases
 
-function New-BashStyleAlias([string]$name, [string]$command)
-{
+function New-BashStyleAlias([string]$name, [string]$command) {
     $sb = [scriptblock]::Create($command)
     New-Item "Function:\global:$name" -Value $sb -Force | Out-Null
 }
@@ -198,12 +138,8 @@ New-BashStyleAlias repos 'cd c:/appl/repos'
 New-BashStyleAlias progs 'cd c:/appl/progs'
 New-BashStyleAlias certs 'cd c:/appl/certs'
 New-BashStyleAlias dotfiles 'cd c:/appl/repos/dotfiles'
-New-BashStyleAlias sdp-flux 'cd c:/appl/repos/sdp-flux'
-New-BashStyleAlias sdp-aks 'cd c:/appl/repos/sdp-aks'
-New-BashStyleAlias environments 'cd c:/appl/repos/environments'
-
-Set-Alias flux sdp-flux
-Set-Alias aks sdp-aks
+New-BashStyleAlias operations 'cd c:/appl/repos/operations'
+New-BashStyleAlias kneik 'cd c:/appl/repos/Dhhr.Kneik'
 
 # Git commands
 New-BashStyleAlias log "git log --oneline"
@@ -224,10 +160,10 @@ New-BashStyleAlias glog "git log --graph --pretty --oneline --abbrev-commit --de
 New-BashStyleAlias prev "Get-Content (Get-PSReadlineOption).HistorySavePath"
 
 
-function reset(){
+function reset() {
     [CmdletBinding()]
     param (
-        [Parameter(ParameterSetName="Default", Position=0)]
+        [Parameter(ParameterSetName = "Default", Position = 0)]
         $Mode = "soft"
     )
     $branch = (git rev-parse --abbrev-ref HEAD)
@@ -236,49 +172,49 @@ function reset(){
     status
 }
 
-function gcom(){
+function gcom() {
     [CmdletBinding()]
     param (
-        [Parameter(Mandatory=$true, ParameterSetName="Default", Position=0)]
-          [string] $message
+        [Parameter(Mandatory = $true, ParameterSetName = "Default", Position = 0)]
+        [string] $message
     )
-   git commit -m $message
+    git commit -m $message
 }
 
 set-alias gcmon gcom
 set-alias com gcom
 
-function gadd(){
+function gadd() {
     [CmdletBinding()]
     param (
-        [Parameter(Mandatory=$true, ParameterSetName="Default", Position=0)]
-          [string] $name
+        [Parameter(Mandatory = $true, ParameterSetName = "Default", Position = 0)]
+        [string] $name
     )
-   git add $name
-   git status
+    git add $name
+    git status
 }
 
 set-alias add gadd
 
-function gaddcom(){
+function gaddcom() {
     [CmdletBinding()]
     param (
-          [Parameter(Mandatory=$true, ParameterSetName="Default", Position=0)]
-          [string] $Name,
-          [Parameter(Mandatory=$true, ParameterSetName="Default", Position=1)]
-          [string] $Message
+        [Parameter(Mandatory = $true, ParameterSetName = "Default", Position = 0)]
+        [string] $Name,
+        [Parameter(Mandatory = $true, ParameterSetName = "Default", Position = 1)]
+        [string] $Message
     )
-   git add $Name
-   git commit -m $Message
-   git --no-pager log --pretty=oneline -n3 --oneline
+    git add $Name
+    git commit -m $Message
+    git --no-pager log --pretty=oneline -n3 --oneline
 }
 
 set-alias acom gaddcom
 
-function reset(){
+function reset() {
     [CmdletBinding()]
     param (
-        [Parameter(ParameterSetName="Mode", Position=0)]
+        [Parameter(ParameterSetName = "Mode", Position = 0)]
         $Mode = "soft"
     )
     $branch = (git rev-parse --abbrev-ref HEAD)
@@ -290,41 +226,39 @@ function reset(){
     status
 }
 
-function merge(){
+function merge() {
     [CmdletBinding()]
     param (
-          [Parameter(Mandatory=$true, ParameterSetName="Default", Position=0)]
-          [string] $Name
+        [Parameter(Mandatory = $true, ParameterSetName = "Default", Position = 0)]
+        [string] $Name
     )
-   git merge $Name
+    git merge $Name
 }
 
-function clone(){
+function clone() {
     [CmdletBinding()]
     param (
-          [Parameter(Mandatory=$true, ParameterSetName="Default", Position=0)]
-          [string] $Name
+        [Parameter(Mandatory = $true, ParameterSetName = "Default", Position = 0)]
+        [string] $Name
     )
-   git clone $Name
+    git clone $Name
 }
 
 # Open current repo and branch on Github
-function remote(){
+function remote() {
 
     [CmdletBinding()]
     param (
-          [Parameter(Mandatory=$false, ParameterSetName="Default", Position=0)]
-          [switch] $Repo,
-          [Parameter(Mandatory=$false, ParameterSetName="Default", Position=1)]
-          [switch] $LastCommit
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", Position = 0)]
+        [switch] $Repo,
+        [Parameter(Mandatory = $false, ParameterSetName = "Default", Position = 1)]
+        [switch] $LastCommit
     )
 
     $rawurl = git remote get-url --all origin
 
-    if ($rawurl -like "*.git")
-
-    {
-    $url = $rawurl.Substring(0, $rawurl.lastIndexOf('.'))
+    if ($rawurl -like "*.git") {
+        $url = $rawurl.Substring(0, $rawurl.lastIndexOf('.'))
 
     }
     else {
@@ -334,15 +268,16 @@ function remote(){
     $branch = git rev-parse --abbrev-ref HEAD
     $head = git rev-parse --short HEAD
 
-    if ($Repo) {$1 = "$url/tree/$branch"}
+    if ($Repo) { $1 = "$url/tree/$branch" }
     $2 = "$url/commits/$branch"
-    if ($LastCommit) {$3 = "$url/commit/$head"}
+    if ($LastCommit) { $3 = "$url/commit/$head" }
 
     Start-Process chrome.exe $1, $2, $3
 }
 
 ## Git branch switching
 New-BashStyleAlias master "git checkout master"
+New-BashStyleAlias main "git checkout main"
 New-BashStyleAlias prod "git checkout prod"
 New-BashStyleAlias dev "git checkout dev"
 New-BashStyleAlias production "git checkout production"
@@ -366,19 +301,15 @@ $isAdmin = $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administ
 
 
 $Host.UI.RawUI.WindowTitle = "PowerShell {0}" -f $PSVersionTable.PSVersion.Major.ToString()
-if ($isAdmin)
-{
+if ($isAdmin) {
     $Host.UI.RawUI.WindowTitle += " [ADMIN]"
 }
 
-function dirs
-{
-    if ($args.Count -gt 0)
-    {
+function dirs {
+    if ($args.Count -gt 0) {
         Get-ChildItem -Recurse -Include "$args" | Foreach-Object FullName
     }
-    else
-    {
+    else {
         Get-ChildItem -Recurse | Foreach-Object FullName
     }
 }
