@@ -319,3 +319,19 @@ function cc {
     Invoke-History | Set-Clipboard
 
 }
+
+# Forward docker and docker-compose from WSL to Windows. Which exact index needs to be split may vary based on your distro and even local machine.
+$ifconfig = wsl ifconfig eth0
+$env:DOCKER_HOST = $ifconfig[1].Split(" ")[9]
+
+function dockerd {
+    wsl sudo dockerd -H $env:DOCKER_HOST
+}
+
+function pkill { wsl sudo pkill $args }
+
+function docker-compose { wsl docker-compose -H $env:DOCKER_HOST $args }
+function docker { wsl docker -H $env:DOCKER_HOST $args }
+
+Set-Alias d docker
+Set-Alias doc docker-compose
