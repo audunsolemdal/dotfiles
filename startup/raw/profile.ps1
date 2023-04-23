@@ -131,16 +131,6 @@ New-BashStyleAlias .... "cd ../../../"
 New-BashStyleAlias ..... "cd ../../../../"
 New-BashStyleAlias cl "cd $$" # cd to last argument of previous folder
 
-# CD to Specific folders
-New-BashStyleAlias home 'cd ~'
-New-BashStyleAlias appl 'cd c:/appl'
-New-BashStyleAlias repos 'cd c:/appl/repos'
-New-BashStyleAlias progs 'cd c:/appl/progs'
-New-BashStyleAlias certs 'cd c:/appl/certs'
-New-BashStyleAlias dotfiles 'cd c:/appl/repos/dotfiles'
-New-BashStyleAlias operations 'cd c:/appl/repos/operations'
-New-BashStyleAlias kneik 'cd c:/appl/repos/Dhhr.Kneik'
-
 # Git commands
 New-BashStyleAlias log "git log --oneline"
 New-BashStyleAlias gdiff "git diff"
@@ -155,9 +145,22 @@ New-BashStyleAlias pull "git pull"
 New-BashStyleAlias recent "git for-each-ref --sort -committerdate refs/heads/"
 New-BashStyleAlias glog "git log --graph --pretty --oneline --abbrev-commit --decorate"
 
+# CD to Specific folders
+New-BashStyleAlias home 'cd ~'
+New-BashStyleAlias appl 'cd c:/appl'
+New-BashStyleAlias repos 'cd c:/appl/repos'
+New-BashStyleAlias path 'cd c:/appl/path'
+New-BashStyleAlias certs 'cd c:/appl/certs'
+New-BashStyleAlias dotfiles 'cd c:/appl/repos/dotfiles'
+
 # Speical commands
 
 New-BashStyleAlias prev "Get-Content (Get-PSReadlineOption).HistorySavePath"
+
+function Authenticate-Databricks {
+    $env:DATABRICKS_AAD_TOKEN = (az account get-access-token --resource 2ff814a6-3304-4ab8-85cb-cd0e6f879c1d) | convertfrom-json | Select-Object accessToken -ExpandProperty accessToken
+    databricks configure --host https://xxx.azuredatabricks.net --aad-token --jobs-api-version 2.1
+}
 
 
 function reset() {
@@ -278,7 +281,9 @@ function remote() {
 ## Git branch switching
 New-BashStyleAlias master "git checkout master"
 New-BashStyleAlias main "git checkout main"
-New-BashStyleAlias prod "git checkout prod"
+New-BashStyleAlias mainp "git checkout main && pull"
+New-BashStyleAlias prod "git checkout production"
+New-BashStyleAlias prodp "git checkout production && pull"
 New-BashStyleAlias dev "git checkout dev"
 New-BashStyleAlias production "git checkout production"
 New-BashStyleAlias development "git checkout development"

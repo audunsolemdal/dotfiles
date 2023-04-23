@@ -10,6 +10,7 @@ echo "
 
 # Extra to path
 PATH=$PATH:~/path
+PATH=$PATH:~/.local/bin
 
 # Custom functions
 
