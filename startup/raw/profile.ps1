@@ -9,9 +9,10 @@ Add-Type -AssemblyName PresentationCore
 if (-not [Windows.Input.Keyboard]::IsKeyDown([System.Windows.Input.Key]::LeftCtrl)) {
     # Critical Modules
     Import-Module "Terminal-icons"
-    Set-PoshPrompt -Theme C:\appl\repos\dotfiles\startup\oh-my-posh\agnoster-customized.json
+    oh-my-posh init pwsh --config C:\appl\repos\dotfiles\startup\oh-my-posh\agnoster-customized.json | Invoke-Expression
 }
 
+$PSDefaultParameterValues["Out-Default:OutVariable"] = "__" # $__ = last output
 Set-PSReadLineOption -PredictionSource HistoryAndPlugin
 
 # Alias
@@ -25,8 +26,16 @@ New-Alias which get-command
 
 # Bash functionality
 
-function TouchFile ($name) {
+function touch ($name) {
     New-Item -Path . -Name $name
+}
+
+function WingetRun {
+    param (
+        [string]$packageName
+    )
+    
+    Start-Process microsoft-edge:https://winget.run/search?query=$packageName 
 }
 
 Set-Alias -name touch -Value TouchFile
