@@ -1,25 +1,18 @@
 // eq - %LOCALAPPDATA%\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\profiles.json
-
-
 // To view the default settings, hold "alt" while clicking on the "Settings" button.
 // For documentation on these settings, see: https://aka.ms/terminal-documentation
-
 {
   "$schema": "https://aka.ms/terminal-profiles-schema",
-
-  "defaultProfile": "{b091671b-cbd8-4bf4-86e8-55f57173be34}",
+  "defaultProfile": "{574e775e-4f2a-5b96-ac1e-a2962a402336}",
   "initialCols": 128,
   "initialRows": 38,
   "windowRestoreMode": "lastPositionAndSize",
   "useTabSwitcher": true,
-
   // Selection
   "copyOnSelect": false,
   "copyFormatting": true,
   "wordDelimiters": " /\\()\"'-.,:;<>~!@#$%^&*|+=[]{}~?\u2502",
-
   "profiles": [
-
     {
       "guid": "{574e775e-4f2a-5b96-ac1e-a2962a402336}",
       // Make changes here to the pwsh.exe profile
@@ -37,7 +30,7 @@
       "name": "PowerShell 7.x",
       "padding": "10, 10, 0, 10",
       "hidden": false,
-      "startingDirectory": "c:/appl/repos",
+      "startingDirectory": "c:/appl/repos/miljodir/iac",
       "source": "Windows.Terminal.PowershellCore"
     },
     {
@@ -74,7 +67,6 @@
       "fontFace": "mesloLGS NF",
       "fontSize": 15
     },
-
     {
       "guid": "{b091671b-cbd8-4bf4-86e8-55f57173be34}",
       "background": "#000000",
@@ -84,7 +76,7 @@
       "icon": "ms-appx:///ProfileIcons/pwsh-preview.png",
       "name": "PowerShell 7 Preview",
       "padding": "10, 10, 0, 10",
-      "hidden": false,
+      "hidden": true,
       "startingDirectory": "c:/appl/repos",
       "colorScheme": "Campbell",
       "cursorHeight": 25,
@@ -92,68 +84,242 @@
       "fontSize": 15,
     }
   ],
-  
-    // Add custom color schemes to this array
-    "schemes": [],
-  
-    // Add any keybinding overrides to this array.
-    // To unbind a default keybinding, set the command to "unbound"
-    "keybindings": [
-
-      // Settings
-      { "command": "openSettings", "keys": "ctrl+," },
-      { "command": "commandPalette", "keys": "ctrl+shift+p" },
-      {  "command": "toggleFocusMode", "keys": "alt+f" },
-      { "command": { "action": "setTabColor", "color": "#ffffff" }, "keys": "ctrl+a" },
-      { "command": "toggleRetroEffect", "keys": "ctrl+d" },
-
-      // Tabs general
-      { "command": "newTab", "keys": "ctrl+t" },
-      { "command": "closePane", "keys": "ctrl+w" },
-      { "command": "nextTab", "keys": "ctrl+tab" },
-      { "command": "prevTab", "keys": "ctrl+shift+tab" },
-
-      // Tab switches
-      { "command": { "action": "switchToTab", "index": 0 }, "keys": "ctrl+1" },
-      { "command": { "action": "switchToTab", "index": 1 }, "keys": "ctrl+2" },
-      { "command": { "action": "switchToTab", "index": 2 }, "keys": "ctrl+3" },
-      { "command": { "action": "switchToTab", "index": 3 }, "keys": "ctrl+4" },
-      { "command": { "action": "switchToTab", "index": 4 }, "keys": "ctrl+5" },
-      { "command": { "action": "switchToTab", "index": 5 }, "keys": "ctrl+6" },
-      { "command": { "action": "switchToTab", "index": 6 }, "keys": "ctrl+7" },
-      { "command": { "action": "switchToTab", "index": 7 }, "keys": "ctrl+8" },
-      { "command": { "action": "switchToTab", "index": 8 }, "keys": "ctrl+9" },
-
-      // Clipboard Integration
-      { "command": { "action": "copy", "singleLine": false }, "keys": "ctrl+shift+c" },
-      { "command": { "action": "copy", "singleLine": false }, "keys": "ctrl+insert" },
-      { "command": "paste", "keys": "ctrl+shift+v" },
-      { "command": "paste", "keys": "shift+insert" },
-
-      // Split
-      { "command": { "action": "splitPane", "split": "horizontal" }, "keys": "alt+shift+up" },
-      { "command": { "action": "splitPane", "split": "vertical" }, "keys": "alt+shift+right" },
-      { "command": { "action": "splitPane", "split": "horizontal" }, "keys": "alt+shift+down" },
-      { "command": { "action": "splitPane", "split": "vertical" }, "keys": "alt+shift+left" },
-
-      // Scrollback
-      { "command": "scrollDown", "keys": "shift+down" },
-      { "command": "scrollDownPage", "keys": "pgdn" },
-      { "command": "scrollUp", "keys": "shift+up" },
-      { "command": "scrollUpPage", "keys": "pgup" },
-
-      // Focus
-      { "command": { "action": "moveFocus", "direction": "down" }, "keys": "alt+down" },
-      { "command": { "action": "moveFocus", "direction": "left" }, "keys": "alt+left" },
-      { "command": { "action": "moveFocus", "direction": "right" }, "keys": "alt+right" },
-      { "command": { "action": "moveFocus", "direction": "up" }, "keys": "alt+up" },
-
-      // Resize pane
-      { "command": { "action": "resizePane", "direction": "down" }, "keys": "ctrl+shift+down" },
-      { "command": { "action": "resizePane", "direction": "left" }, "keys": "ctrl+shift+left" },
-      { "command": { "action": "resizePane", "direction": "right" }, "keys": "ctrl+shift+right" },
-      { "command": { "action": "resizePane", "direction": "up" }, "keys": "ctrl+shift+up" }
-
-    ]
-  }
-  
+  // Add custom color schemes to this array
+  "schemes": [],
+  // Add any keybinding overrides to this array.
+  // To unbind a default keybinding, set the command to "unbound"
+  "keybindings": [
+    // Settings
+    {
+      "command": "openSettings",
+      "keys": "ctrl+,"
+    },
+    {
+      "command": "commandPalette",
+      "keys": "ctrl+shift+p"
+    },
+    {
+      "command": "toggleFocusMode",
+      "keys": "alt+f"
+    },
+    {
+      "command": {
+        "action": "setTabColor",
+        "color": "#ffffff"
+      },
+      "keys": "ctrl+a"
+    },
+    {
+      "command": "toggleRetroEffect",
+      "keys": "ctrl+d"
+    },
+    // Tabs general
+    {
+      "command": "newTab",
+      "keys": "ctrl+t"
+    },
+    {
+      "command": "closePane",
+      "keys": "ctrl+w"
+    },
+    {
+      "command": "nextTab",
+      "keys": "ctrl+tab"
+    },
+    {
+      "command": "prevTab",
+      "keys": "ctrl+shift+tab"
+    },
+    // Tab switches
+    {
+      "command": {
+        "action": "switchToTab",
+        "index": 0
+      },
+      "keys": "ctrl+1"
+    },
+    {
+      "command": {
+        "action": "switchToTab",
+        "index": 1
+      },
+      "keys": "ctrl+2"
+    },
+    {
+      "command": {
+        "action": "switchToTab",
+        "index": 2
+      },
+      "keys": "ctrl+3"
+    },
+    {
+      "command": {
+        "action": "switchToTab",
+        "index": 3
+      },
+      "keys": "ctrl+4"
+    },
+    {
+      "command": {
+        "action": "switchToTab",
+        "index": 4
+      },
+      "keys": "ctrl+5"
+    },
+    {
+      "command": {
+        "action": "switchToTab",
+        "index": 5
+      },
+      "keys": "ctrl+6"
+    },
+    {
+      "command": {
+        "action": "switchToTab",
+        "index": 6
+      },
+      "keys": "ctrl+7"
+    },
+    {
+      "command": {
+        "action": "switchToTab",
+        "index": 7
+      },
+      "keys": "ctrl+8"
+    },
+    {
+      "command": {
+        "action": "switchToTab",
+        "index": 8
+      },
+      "keys": "ctrl+9"
+    },
+    // Clipboard Integration
+    {
+      "command": {
+        "action": "copy",
+        "singleLine": false
+      },
+      "keys": "ctrl+shift+c"
+    },
+    {
+      "command": {
+        "action": "copy",
+        "singleLine": false
+      },
+      "keys": "ctrl+insert"
+    },
+    {
+      "command": "paste",
+      "keys": "ctrl+shift+v"
+    },
+    {
+      "command": "paste",
+      "keys": "shift+insert"
+    },
+    // Split
+    {
+      "command": {
+        "action": "splitPane",
+        "split": "horizontal"
+      },
+      "keys": "alt+shift+up"
+    },
+    {
+      "command": {
+        "action": "splitPane",
+        "split": "vertical"
+      },
+      "keys": "alt+shift+right"
+    },
+    {
+      "command": {
+        "action": "splitPane",
+        "split": "horizontal"
+      },
+      "keys": "alt+shift+down"
+    },
+    {
+      "command": {
+        "action": "splitPane",
+        "split": "vertical"
+      },
+      "keys": "alt+shift+left"
+    },
+    // Scrollback
+    {
+      "command": "scrollDown",
+      "keys": "shift+down"
+    },
+    {
+      "command": "scrollDownPage",
+      "keys": "pgdn"
+    },
+    {
+      "command": "scrollUp",
+      "keys": "shift+up"
+    },
+    {
+      "command": "scrollUpPage",
+      "keys": "pgup"
+    },
+    // Focus
+    {
+      "command": {
+        "action": "moveFocus",
+        "direction": "down"
+      },
+      "keys": "alt+down"
+    },
+    {
+      "command": {
+        "action": "moveFocus",
+        "direction": "left"
+      },
+      "keys": "alt+left"
+    },
+    {
+      "command": {
+        "action": "moveFocus",
+        "direction": "right"
+      },
+      "keys": "alt+right"
+    },
+    {
+      "command": {
+        "action": "moveFocus",
+        "direction": "up"
+      },
+      "keys": "alt+up"
+    },
+    // Resize pane
+    {
+      "command": {
+        "action": "resizePane",
+        "direction": "down"
+      },
+      "keys": "ctrl+shift+down"
+    },
+    {
+      "command": {
+        "action": "resizePane",
+        "direction": "left"
+      },
+      "keys": "ctrl+shift+left"
+    },
+    {
+      "command": {
+        "action": "resizePane",
+        "direction": "right"
+      },
+      "keys": "ctrl+shift+right"
+    },
+    {
+      "command": {
+        "action": "resizePane",
+        "direction": "up"
+      },
+      "keys": "ctrl+shift+up"
+    }
+  ]
+}
