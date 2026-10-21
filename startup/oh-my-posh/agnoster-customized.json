@@ -34,7 +34,7 @@
           "properties": {
             "folder_icon": "",
             "folder_separator_icon": "  ",
-            "home_icon": "",
+            "home_icon": "",
             "style": "agnoster"
           },
           "style": "powerline",

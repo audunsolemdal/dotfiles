@@ -167,7 +167,7 @@ New-BashStyleAlias dotfiles 'cd c:/appl/repos/personal/dotfiles'
 # paths
 
 New-BashStyleAlias mdir 'cd c:/appl/repos/miljodir/iac'
-New-BashStyleAlias adbg 'cd c:/appl/repos/adb'
+New-BashStyleAlias adb 'cd c:/appl/repos/adb'
 
 # Speical commands
 
