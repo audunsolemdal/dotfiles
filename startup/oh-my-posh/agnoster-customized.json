@@ -22,10 +22,17 @@
       "segments": [
         {
           "background": "#ebcc34",
+          "background_templates": [
+            "{{ if eq .Context \"p-aks\" }}#f1184c{{ end }}",
+            "{{ if eq .Context \"d-aks\" }}#4caf50{{ end }}"
+          ],
           "foreground": "#000000",
+          "foreground_templates": [
+            "{{ if eq .Context \"p-aks\" }}#ffffff{{ end }}"
+          ],
           "leading_diamond": "\ue0b6",
           "style": "diamond",
-          "template": " \uf308 Kubernetes {{.Context}} cluster {{if .Namespace}}- {{.Namespace}} namespace{{end}} ",
+          "template": " \uf308 {{ .Context }} / {{ if .Namespace }}{{ .Namespace }}{{ else }}default{{ end }} ",
           "trailing_diamond": "\ue0b0",
           "type": "kubectl"
         },
