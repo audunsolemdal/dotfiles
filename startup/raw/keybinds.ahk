@@ -1,74 +1,43 @@
-#SingleInstance force
+#Requires AutoHotkey v2.0
+#SingleInstance Force
 
-; Default state of lock keys
-SetCapsLockState, AlwaysOff
-SetScrollLockState, AlwaysOff
-return
+SetCapsLockState "AlwaysOff"
+SetScrollLockState "AlwaysOff"
 
-; Suspend AutoHotKey
-CapsLock & p::Suspend ; 
-return
+; Suspend AutoHotkey hotkeys
+CapsLock & p::Suspend()
 
 ; Google Search highlighted text
-CapsLock & Space::
-{
-    Send, ^c
+CapsLock & Space::{
+    Send "^c"
     Sleep 50
-    Run, http://www.google.com/search?q=%clipboard%
-    Return
+    Run "https://www.google.com/search?q=" . A_Clipboard
 }
 
-; Rebind useless key to braces
-+|::
-{
-    Send, {RAlt Down}{7}{RAlt Up} 
-    Send, {RAlt Down}{0}{RAlt Up}
-    return
+; Rebind the pipe key to braces
++|::{
+    Send "{RAlt down}7{RAlt up}"
+    Send "{RAlt down}0{RAlt up}"
 }
 
+; Scroll tabs forward and back
+CapsLock & WheelDown::Send "^{Tab}"
+CapsLock & WheelUp::Send "^+{Tab}"
 
-; Scroll tab forward (chrome) 
-CapsLock & WheelDown::
-{
-    Send ^{Tab}
-    sleep 50
-    return
+#n::{
+    if WinExist("Untitled - Notepad") || WinExist("*Untitled - Notepad") {
+        WinActivate()
+        Send "{Enter 2}"
+    } else {
+        Run "notepad.exe"
+    }
 }
 
-; Scroll tab back (chrome)
-CapsLock & WheelUp::
-{
-    Send, ^+{Tab}
-    sleep 50
-    return
+; Right Control clicks
+RCtrl::Click()
+
+#c::{
+    Send "^c"
+    ClipWait()
+    A_Clipboard := A_Clipboard . ""
 }
-
-#n::
-if WinExist("Untitled - Notepad") || if WinExist("*Untitled - Notepad")
-{
-    WinActivate  ; Automatically uses the window found above.
-    Send, {Enter}
-    Send, {Enter}
-    return
-}
-else 
-{
-    Run, notepad.exe
-    return
-}
-
-; Unused F keys
-
-
-; Mouse click with useless key (right ctrl)
-RCtrl::
-{
-    Click
-    Return
-}
-
-#c::
-	Send ^c
-	ClipWait
-	Clipboard:=Clipboard ""
-Return

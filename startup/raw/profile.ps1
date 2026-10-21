@@ -9,11 +9,13 @@ Add-Type -AssemblyName PresentationCore
 if (-not [Windows.Input.Keyboard]::IsKeyDown([System.Windows.Input.Key]::LeftCtrl)) {
     # Critical Modules
     Import-Module "Terminal-icons"
-    oh-my-posh init pwsh --config C:\appl\repos\dotfiles\startup\oh-my-posh\agnoster-customized.json | Invoke-Expression
+    oh-my-posh init pwsh --config C:\appl\repos\personal\dotfiles\startup\oh-my-posh\agnoster-customized.json | Invoke-Expression
 }
 
 $PSDefaultParameterValues["Out-Default:OutVariable"] = "__" # $__ = last output
-Set-PSReadLineOption -PredictionSource HistoryAndPlugin
+if ($Host.Name -eq "ConsoleHost" -and $Host.UI.SupportsVirtualTerminal -and -not [Console]::IsOutputRedirected -and (Get-Command Set-PSReadLineOption -ErrorAction SilentlyContinue)) {
+    Set-PSReadLineOption -PredictionSource HistoryAndPlugin
+}
 
 # Alias
 
@@ -160,7 +162,12 @@ New-BashStyleAlias appl 'cd c:/appl'
 New-BashStyleAlias repos 'cd c:/appl/repos'
 New-BashStyleAlias path 'cd c:/appl/path'
 New-BashStyleAlias certs 'cd c:/appl/certs'
-New-BashStyleAlias dotfiles 'cd c:/appl/repos/dotfiles'
+New-BashStyleAlias dotfiles 'cd c:/appl/repos/personal/dotfiles'
+
+# paths
+
+New-BashStyleAlias mdir 'cd c:/appl/repos/miljodir/iac'
+New-BashStyleAlias adbg 'cd c:/appl/repos/adb'
 
 # Speical commands
 

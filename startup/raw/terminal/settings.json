@@ -31,7 +31,7 @@
       "backgroundImageStechMode": "uniformToFill",
       "colorScheme": "Campbell",
       "cursorHeight": 25,
-      "fontFace": "LiterationMono NF",
+      "fontFace": "LiterationMono Nerd Font Mono",
       "fontSize": 15,
       "icon": "ms-appdata:///roaming/pwsh-32.png",
       "name": "PowerShell 7.x",
@@ -88,7 +88,7 @@
       "startingDirectory": "c:/appl/repos",
       "colorScheme": "Campbell",
       "cursorHeight": 25,
-      "fontFace": "LiterationMono NF",
+      "fontFace": "LiterationMono Nerd Font Mono",
       "fontSize": 15,
     }
   ],
