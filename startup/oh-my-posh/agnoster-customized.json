@@ -31,9 +31,9 @@
             "{{ if eq .Context \"p-aks\" }}#ffffff{{ end }}"
           ],
           "leading_diamond": "\ue0b6",
-          "style": "diamond",
-          "template": " \uf308 {{ .Context }}/{{ if .Namespace }}{{ .Namespace }}{{ else }}default{{ end }}",
-          "trailing_diamond": "\ue0b0",
+          "powerline_symbol": "\ue0b0",
+          "style": "powerline",
+          "template": " \uf308 {{ .Context }}/{{ if .Namespace }}{{ .Namespace }}{{ else }}default{{ end }} ",
           "type": "kubectl"
         },
         {
