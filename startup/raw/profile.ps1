@@ -2,6 +2,8 @@
 
 # Default folder
 $env:HOME = "C:\Appl"
+# HOME override makes oh-my-posh look for C:\Appl\.azure; az CLI uses USERPROFILE
+$env:AZURE_CONFIG_DIR = "$env:USERPROFILE\.azure"
 
 # Hold control to skip import of modules, credit @VladimirReshetnikov
 Add-Type -AssemblyName WindowsBase
