@@ -11,8 +11,8 @@ This will make everything in the startup folder be used at startup.
 The helpers in `startup/raw/profile.ps1` require an authenticated `gh` CLI and use
 its current repository context.
 
-- `ghrun` opens the newest in-progress Actions run whose start time is within the
-  last 60 seconds, excluding CodeQL and Copilot review workflows by name or path.
+- `ghrun` opens the newest Actions run, regardless of status, whose start time is
+  within the last two minutes, excluding CodeQL and Copilot review workflows by name or path.
   The start time, not creation time, is used so reruns are handled correctly.
 - `ghrule` opens the settings editor for each repository-owned branch ruleset
   whose name starts with `Default branch:`. Inherited organization rulesets are

@@ -275,14 +275,13 @@ function ghrun {
     param ()
 
     $now = [DateTimeOffset]::UtcNow
-    $pages = gh api 'repos/{owner}/{repo}/actions/runs?status=in_progress&per_page=100' --paginate --slurp
+    $pages = gh api 'repos/{owner}/{repo}/actions/runs?per_page=100' --paginate --slurp
     if ($LASTEXITCODE -ne 0) {
         throw "Failed to list workflow runs with gh."
     }
 
     $run = $pages | ConvertFrom-Json | ForEach-Object { $_.workflow_runs } |
     Where-Object {
-        $_.status -eq 'in_progress' -and
         $_.run_started_at -and
         [DateTimeOffset]$_.run_started_at -ge $now.AddMinutes(-2) -and
         [DateTimeOffset]$_.run_started_at -le $now -and
@@ -292,7 +291,7 @@ function ghrun {
     Select-Object -First 1
 
     if (-not $run) {
-        Write-Warning "No matching in-progress workflow started within the last two minutes."
+        Write-Warning "No matching workflow started within the last two minutes."
         return
     }
 
