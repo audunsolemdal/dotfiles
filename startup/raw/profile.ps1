@@ -171,6 +171,11 @@ New-BashStyleAlias dotfiles 'cd c:/appl/repos/personal/dotfiles'
 New-BashStyleAlias mdir 'cd c:/appl/repos/miljodir/iac'
 New-BashStyleAlias adb 'cd c:/appl/repos/adb'
 
+New-BashStyleAlias waf 'cd c:/appl/repos/miljodir/iac/cp-ne1waf'
+New-BashStyleAlias net 'cd c:/appl/repos/miljodir/iac/cp-ne1net'
+New-BashStyleAlias ygg 'cd c:/appl/repos/miljodir/iac/cp-yggdrasil'
+New-BashStyleAlias aks 'cd c:/appl/repos/miljodir/iac/cp-aks'
+
 # Speical commands
 
 New-BashStyleAlias prev "Get-Content (Get-PSReadlineOption).HistorySavePath"
@@ -263,6 +268,65 @@ function clone() {
         [string] $Name
     )
     git clone $Name
+}
+
+function ghrun {
+    [CmdletBinding()]
+    param ()
+
+    $now = [DateTimeOffset]::UtcNow
+    $pages = gh api 'repos/{owner}/{repo}/actions/runs?status=in_progress&per_page=100' --paginate --slurp
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to list workflow runs with gh."
+    }
+
+    $run = $pages | ConvertFrom-Json | ForEach-Object { $_.workflow_runs } |
+    Where-Object {
+        $_.status -eq 'in_progress' -and
+        $_.run_started_at -and
+        [DateTimeOffset]$_.run_started_at -ge $now.AddMinutes(-2) -and
+        [DateTimeOffset]$_.run_started_at -le $now -and
+        "$($_.name) $($_.path)" -notmatch 'codeql|copilot.*review'
+    } |
+    Sort-Object { [DateTimeOffset]$_.run_started_at } -Descending |
+    Select-Object -First 1
+
+    if (-not $run) {
+        Write-Warning "No matching in-progress workflow started within the last two minutes."
+        return
+    }
+
+    gh run view $run.id --web
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to open workflow run $($run.id) with gh."
+    }
+}
+
+function ghrule {
+    [CmdletBinding()]
+    param ()
+
+    $pages = gh api 'repos/{owner}/{repo}/rulesets?includes_parents=false&per_page=100' --paginate --slurp
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to list repository rulesets with gh."
+    }
+
+    $rulesets = @($pages | ConvertFrom-Json | ForEach-Object { $_ } |
+        Where-Object { $_.target -eq 'branch' -and $_.name -like 'Default branch:*' })
+
+    if ($rulesets.Count -eq 0) {
+        Write-Warning "No repository branch rulesets named 'Default branch: ...' were found."
+        return
+    }
+
+    $repoUrl = gh repo view --json url --jq .url
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to resolve the repository URL with gh."
+    }
+
+    foreach ($ruleset in $rulesets) {
+        Start-Process "$repoUrl/settings/rules/$($ruleset.id)" -ErrorAction Stop
+    }
 }
 
 # Open current repo and branch on Github
@@ -358,3 +422,24 @@ function docker { wsl docker -H $env:DOCKER_HOST $args }
 
 Set-Alias d docker
 Set-Alias doc docker-compose
+
+function close {
+    # Map each PID to its parent in one query, then walk up from this shell
+    $parentOf = @{}
+    Get-CimInstance Win32_Process -Property ProcessId, ParentProcessId |
+    ForEach-Object { $parentOf[[uint32]$_.ProcessId] = [uint32]$_.ParentProcessId }
+
+    $keep = [System.Collections.Generic.HashSet[uint32]]::new()
+    $cur = [uint32]$PID
+    while ($cur -and $keep.Add($cur)) { $cur = $parentOf[$cur] }
+
+    # Close Explorer folder windows directly; Explorer itself is left running
+    (New-Object -ComObject Shell.Application).Windows() | ForEach-Object { $_.Quit() }
+
+    $targets = Get-Process | Where-Object {
+        $_.MainWindowHandle -ne 0 -and -not $keep.Contains([uint32]$_.Id) -and $_.ProcessName -ne 'explorer'
+    }
+    $targets | Stop-Process -Force -ErrorAction SilentlyContinue
+}
+
+$env:PATH = $env:PATH + ";C:\appl"
