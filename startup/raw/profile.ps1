@@ -298,6 +298,99 @@ function Authenticate-Databricks {
     databricks configure --host https://xxx.azuredatabricks.net --aad-token --jobs-api-version 2.1
 }
 
+# Activate an eligible PIM role (default MAP Admin Contributor) scoped to one subscription.
+# Uses the az CLI login and handles the Conditional Access step-up (claims challenge) PIM may require.
+function pim {
+    [CmdletBinding(SupportsShouldProcess)]
+    param (
+        [Parameter(Mandatory, Position = 0)][string] $Subscription,
+        [string] $Role = 'MAP Admin Contributor',
+        [ValidateRange(1, 24)][int] $Hours = 4,
+        [string] $Justification = 'Activated via powershell function call'
+    )
+
+    $sub = az account list --all --query "[?name=='$Subscription' || id=='$Subscription'] | [0]" -o json | ConvertFrom-Json
+    if (-not $sub) {
+        Write-Warning "Subscription '$Subscription' not found. Run 'az account list --all' or 'az login'."
+        return
+    }
+
+    # Default ARM audience, so the token matches what 'az login --scope' below refreshes
+    $getToken = {
+        $t = az account get-access-token --tenant $sub.tenantId --query accessToken -o tsv
+        if ($LASTEXITCODE -ne 0 -or -not $t) { throw "Could not get an ARM token from az. Run 'az login'." }
+        $t
+    }
+    $token = & $getToken
+    $claims = $token.Split('.')[1].Replace('-', '+').Replace('_', '/')
+    $claims = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($claims.PadRight($claims.Length + (4 - $claims.Length % 4) % 4, '='))) | ConvertFrom-Json
+    $headers = @{ Authorization = "Bearer $token" }
+    $arm = 'https://management.azure.com'
+
+    $eligible = @((Invoke-RestMethod -Headers $headers "$arm/providers/Microsoft.Authorization/roleEligibilityScheduleInstances?api-version=2020-10-01&`$filter=asTarget()").value.properties |
+        Where-Object { $_.expandedProperties.roleDefinition.displayName -eq $Role })
+    # Prefer an eligibility on the subscription itself; otherwise an inherited one (management group/root),
+    # which the API rejects if it doesn't cover the subscription
+    $eligibility = @($eligible | Where-Object scope -EQ "/subscriptions/$($sub.id)") +
+    @($eligible | Where-Object scope -NotLike '/subscriptions/*') | Select-Object -First 1
+    if (-not $eligibility) {
+        $where = ($eligible.expandedProperties.scope.displayName | Sort-Object -Unique) -join ', '
+        Write-Warning "No '$Role' eligibility covering '$($sub.name)'. Eligible at: $(if ($where) { $where } else { 'nothing' })"
+        return
+    }
+
+    $scope = "/subscriptions/$($sub.id)"
+    $body = @{
+        properties = @{
+            principalId                     = $claims.oid
+            roleDefinitionId                = "$scope/providers/Microsoft.Authorization/roleDefinitions/$(Split-Path $eligibility.roleDefinitionId -Leaf)"
+            requestType                     = 'SelfActivate'
+            linkedRoleEligibilityScheduleId = $eligibility.roleEligibilityScheduleId
+            justification                   = $Justification
+            scheduleInfo                    = @{ expiration = @{ type = 'AfterDuration'; duration = "PT${Hours}H" } }
+        }
+    } | ConvertTo-Json -Depth 5
+
+    if (-not $PSCmdlet.ShouldProcess($sub.name, "Activate '$Role' for $Hours h")) { return }
+
+    for ($attempt = 1; ; $attempt++) {
+        $uri = "$arm$scope/providers/Microsoft.Authorization/roleAssignmentScheduleRequests/$([guid]::NewGuid())?api-version=2020-10-01"
+        try {
+            $res = Invoke-RestMethod -Method Put -Headers @{ Authorization = "Bearer $token" } -Uri $uri -Body $body -ContentType 'application/json'
+            break
+        }
+        catch {
+            $err = ($_.ErrorDetails.Message | ConvertFrom-Json -ErrorAction Ignore).error
+            if ($err.code -eq 'RoleAssignmentExists') {
+                Write-Host "'$Role' is already active on $($sub.name)" -ForegroundColor DarkGray
+                return
+            }
+            # Conditional Access authentication context (step-up MFA): sign in with the claims challenge, retry once
+            if ($attempt -eq 1 -and $err.code -eq 'RoleAssignmentRequestAcrsValidationFailed' -and $err.message -match 'claims=([^&\s]+)') {
+                $challenge = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes([uri]::UnescapeDataString($Matches[1])))
+                Write-Host "PIM requires step-up authentication, opening sign-in..." -ForegroundColor Yellow
+                $current = az account show --query id -o tsv 2>$null
+                az login --tenant $sub.tenantId --scope https://management.core.windows.net//.default --claims-challenge $challenge --only-show-errors | Out-Null
+                if ($LASTEXITCODE -ne 0) { throw "az login with claims challenge failed." }
+                if ($current) { az account set --subscription $current }
+                $token = & $getToken
+                continue
+            }
+            throw "PIM activation failed: $(if ($err) { "$($err.code): $($err.message)" } else { $_ })"
+        }
+    }
+
+    Write-Host "'$Role' on " -NoNewline
+    Write-Host $sub.name -ForegroundColor Green -NoNewline
+    Write-Host " for $Hours h: $($res.properties.status)" -ForegroundColor Yellow
+}
+
+Register-ArgumentCompleter -CommandName pim -ParameterName Subscription -ScriptBlock {
+    param($commandName, $parameterName, $wordToComplete)
+    az account list --all --query '[].name' -o tsv 2>$null | Where-Object { $_ -like "$wordToComplete*" } |
+    ForEach-Object { if ($_ -match '\s') { "'$_'" } else { $_ } }
+}
+
 function gcom() {
     [CmdletBinding()]
     param (
