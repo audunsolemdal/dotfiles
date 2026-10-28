@@ -299,14 +299,16 @@ function Authenticate-Databricks {
 }
 
 # Activate an eligible PIM role (default MAP Admin Contributor) scoped to one subscription.
-# Uses the az CLI login and handles the Conditional Access step-up (claims challenge) PIM may require.
+# Every activation requires an interactive step-up sign-in (Conditional Access authentication context).
 function pim {
     [CmdletBinding(SupportsShouldProcess)]
     param (
         [Parameter(Mandatory, Position = 0)][string] $Subscription,
         [string] $Role = 'MAP Admin Contributor',
         [ValidateRange(1, 24)][int] $Hours = 4,
-        [string] $Justification = 'Activated via powershell function call'
+        [string] $Justification = 'Activated via powershell function call',
+        # Authentication context ID required by the PIM activation policy
+        [string] $AuthContext = 'c1'
     )
 
     $sub = az account list --all --query "[?name=='$Subscription' || id=='$Subscription'] | [0]" -o json | ConvertFrom-Json
@@ -315,7 +317,7 @@ function pim {
         return
     }
 
-    # Default ARM audience, so the token matches what 'az login --scope' below refreshes
+    # Regular (non-elevated) token: only used to read eligibilities and identify the user
     $getToken = {
         $t = az account get-access-token --tenant $sub.tenantId --query accessToken -o tsv
         if ($LASTEXITCODE -ne 0 -or -not $t) { throw "Could not get an ARM token from az. Run 'az login'." }
@@ -329,10 +331,8 @@ function pim {
 
     $eligible = @((Invoke-RestMethod -Headers $headers "$arm/providers/Microsoft.Authorization/roleEligibilityScheduleInstances?api-version=2020-10-01&`$filter=asTarget()").value.properties |
         Where-Object { $_.expandedProperties.roleDefinition.displayName -eq $Role })
-    # Prefer an eligibility on the subscription itself; otherwise an inherited one (management group/root),
-    # which the API rejects if it doesn't cover the subscription
-    $eligibility = @($eligible | Where-Object scope -EQ "/subscriptions/$($sub.id)") +
-    @($eligible | Where-Object scope -NotLike '/subscriptions/*') | Select-Object -First 1
+    # Eligibility is inherited from a management group/root; the API rejects it if it doesn't cover the subscription
+    $eligibility = $eligible | Where-Object scope -NotLike '/subscriptions/*' | Select-Object -First 1
     if (-not $eligibility) {
         $where = ($eligible.expandedProperties.scope.displayName | Sort-Object -Unique) -join ', '
         Write-Warning "No '$Role' eligibility covering '$($sub.name)'. Eligible at: $(if ($where) { $where } else { 'nothing' })"
@@ -353,33 +353,47 @@ function pim {
 
     if (-not $PSCmdlet.ShouldProcess($sub.name, "Activate '$Role' for $Hours h")) { return }
 
-    for ($attempt = 1; ; $attempt++) {
-        $uri = "$arm$scope/providers/Microsoft.Authorization/roleAssignmentScheduleRequests/$([guid]::NewGuid())?api-version=2020-10-01"
-        try {
-            $res = Invoke-RestMethod -Method Put -Headers @{ Authorization = "Bearer $token" } -Uri $uri -Body $body -ContentType 'application/json'
-            break
-        }
-        catch {
-            $err = ($_.ErrorDetails.Message | ConvertFrom-Json -ErrorAction Ignore).error
-            if ($err.code -eq 'RoleAssignmentExists') {
-                Write-Host "'$Role' is already active on $($sub.name)" -ForegroundColor DarkGray
-                return
-            }
-            # Conditional Access authentication context (step-up MFA): sign in with the claims challenge, retry once
-            if ($attempt -eq 1 -and $err.code -eq 'RoleAssignmentRequestAcrsValidationFailed' -and $err.message -match 'claims=([^&\s]+)') {
-                $challenge = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes([uri]::UnescapeDataString($Matches[1])))
-                Write-Host "PIM requires step-up authentication, opening sign-in..." -ForegroundColor Yellow
-                $current = az account show --query id -o tsv 2>$null
-                az login --tenant $sub.tenantId --scope https://management.core.windows.net//.default --claims-challenge $challenge --only-show-errors | Out-Null
-                if ($LASTEXITCODE -ne 0) { throw "az login with claims challenge failed." }
-                if ($current) { az account set --subscription $current }
-                $token = & $getToken
-                continue
-            }
-            throw "PIM activation failed: $(if ($err) { "$($err.code): $($err.message)" } else { $_ })"
-        }
+    # Always step up interactively, in a throwaway az config dir: the elevated token never reaches the shared
+    # az cache, so scripts/agents using az cannot reuse it to activate roles without a human doing MFA
+    $challenge = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes(
+        (@{ access_token = @{ acrs = @{ essential = $true; value = $AuthContext } } } | ConvertTo-Json -Depth 3 -Compress)))
+    $saved = $env:AZURE_CONFIG_DIR, $env:AZURE_CORE_LOGIN_EXPERIENCE_V2
+    $tempDir = Join-Path ([IO.Path]::GetTempPath()) "az-pim-$([guid]::NewGuid())"
+    $env:AZURE_CONFIG_DIR = $tempDir
+    $env:AZURE_CORE_LOGIN_EXPERIENCE_V2 = 'off'
+    try {
+        Write-Host "Step-up sign-in for PIM: complete MFA in the browser..." -ForegroundColor Yellow
+        az login --tenant $sub.tenantId --scope https://management.core.windows.net//.default --claims-challenge $challenge --allow-no-subscriptions --only-show-errors | Out-Null
+        if ($LASTEXITCODE -ne 0) { throw "Step-up sign-in failed or was cancelled." }
+        $stepUp = az account get-access-token --tenant $sub.tenantId --query accessToken -o tsv
+        if ($LASTEXITCODE -ne 0 -or -not $stepUp) { throw "Could not get a token from the step-up sign-in." }
+    }
+    finally {
+        $env:AZURE_CONFIG_DIR, $env:AZURE_CORE_LOGIN_EXPERIENCE_V2 = $saved
+        Remove-Item $tempDir -Recurse -Force -ErrorAction Ignore
     }
 
+    $p = $stepUp.Split('.')[1].Replace('-', '+').Replace('_', '/')
+    $stepUpClaims = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($p.PadRight($p.Length + (4 - $p.Length % 4) % 4, '='))) | ConvertFrom-Json
+    if ($stepUpClaims.oid -ne $claims.oid) {
+        throw "Step-up sign-in used a different account ($($stepUpClaims.upn)). Aborting."
+    }
+
+    $uri = "$arm$scope/providers/Microsoft.Authorization/roleAssignmentScheduleRequests/$([guid]::NewGuid())?api-version=2020-10-01"
+    try {
+        $res = Invoke-RestMethod -Method Put -Headers @{ Authorization = "Bearer $stepUp" } -Uri $uri -Body $body -ContentType 'application/json'
+    }
+    catch {
+        $err = ($_.ErrorDetails.Message | ConvertFrom-Json -ErrorAction Ignore).error
+        if ($err.code -eq 'RoleAssignmentExists') {
+            Write-Host "'$Role' is already active on $($sub.name)" -ForegroundColor DarkGray
+            return
+        }
+        throw "PIM activation failed: $(if ($err) { "$($err.code): $($err.message)" } else { $_ })"
+    }
+    finally {
+        $stepUp = $null
+    }
     Write-Host "'$Role' on " -NoNewline
     Write-Host $sub.name -ForegroundColor Green -NoNewline
     Write-Host " for $Hours h: $($res.properties.status)" -ForegroundColor Yellow
