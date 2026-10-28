@@ -149,25 +149,6 @@ function KRe($name) {
     }
 }
 
-function KCon {
-    param (
-        [Parameter(Mandatory)][string] $Context
-    )
-    $contexts = @(kubectl config get-contexts -o name)
-    $target = @($Context, "sdpaks-$Context-k8s") | Where-Object { $_ -in $contexts } | Select-Object -First 1
-    if (-not $target) {
-        Write-Warning "No kubectl context matching '$Context'. Available: $($contexts -join ', ')"
-        return
-    }
-
-    kubectl config use-context $target | Out-Null
-    if ($LASTEXITCODE -eq 0) {
-        Write-Host "Currently in " -NoNewline
-        Write-Host $target -ForegroundColor Green -NoNewline
-        Write-Host " cluster" -ForegroundColor Yellow
-    }
-}
-
 function KNs {
     param (
         [Parameter(Mandatory)][string] $Namespace
@@ -190,14 +171,44 @@ function KNs {
     }
 }
 
-Register-ArgumentCompleter -CommandName KCon -ParameterName Context -ScriptBlock {
-    param($commandName, $parameterName, $wordToComplete)
-    kubectl config get-contexts -o name 2>$null | Where-Object { $_ -like "$wordToComplete*" }
+function Get-KNamespaceName {
+    # Run detached with a hard timeout: auth plugins (kubelogin) can block forever waiting
+    # for an interactive login, which would freeze tab completion
+    $psi = [System.Diagnostics.ProcessStartInfo]::new((Get-Command kubectl -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source)
+    'get', 'namespaces', '--no-headers', '-o', 'custom-columns=NAME:.metadata.name', '--request-timeout=5s' |
+    ForEach-Object { $psi.ArgumentList.Add($_) }
+    $psi.RedirectStandardOutput = $true
+    $psi.RedirectStandardError = $true
+    $psi.RedirectStandardInput = $true
+    $psi.CreateNoWindow = $true
+    $p = [System.Diagnostics.Process]::Start($psi)
+    $p.StandardInput.Close()
+    $p.StandardError.ReadToEndAsync() | Out-Null
+    $out = $p.StandardOutput.ReadToEndAsync()
+    if (-not $p.WaitForExit(6000)) {
+        $p.Kill($true)
+        return
+    }
+    $out.Result -split "`r?`n" | Where-Object { $_ }
 }
 
 Register-ArgumentCompleter -CommandName KNs -ParameterName Namespace -ScriptBlock {
     param($commandName, $parameterName, $wordToComplete)
-    kubectl get namespaces --no-headers -o custom-columns=NAME:.metadata.name 2>$null | Where-Object { $_ -like "$wordToComplete*" }
+    Get-KNamespaceName | Where-Object { $_ -like "$wordToComplete*" }
+}
+
+# kubectx/kubens ship no PowerShell completion
+Register-ArgumentCompleter -Native -CommandName kubectx, kubens -ScriptBlock {
+    param($wordToComplete, $commandAst, $cursorPosition)
+    $names = if ($commandAst.GetCommandName() -match 'kubens') {
+        Get-KNamespaceName
+    }
+    else {
+        kubectl config get-contexts -o name 2>$null
+    }
+    $names | Where-Object { $_ -like "$wordToComplete*" } | ForEach-Object {
+        [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_)
+    }
 }
 
 function dup() {
@@ -366,12 +377,14 @@ function ghrun {
     param ()
 
     $now = [DateTimeOffset]::UtcNow
-    $pages = gh api 'repos/{owner}/{repo}/actions/runs?per_page=100' --paginate --slurp
+    # Filter server-side; paginating every run takes minutes in busy repos
+    $since = $now.AddMinutes(-2).ToString('yyyy-MM-ddTHH:mm:ssZ', [cultureinfo]::InvariantCulture)
+    $response = gh api "repos/{owner}/{repo}/actions/runs?per_page=100&created=%3E%3D$since"
     if ($LASTEXITCODE -ne 0) {
         throw "Failed to list workflow runs with gh."
     }
 
-    $run = $pages | ConvertFrom-Json | ForEach-Object { $_.workflow_runs } |
+    $run = ($response | ConvertFrom-Json).workflow_runs |
     Where-Object {
         $_.run_started_at -and
         [DateTimeOffset]$_.run_started_at -ge $now.AddMinutes(-2) -and
@@ -392,9 +405,15 @@ function ghrun {
     }
 }
 
+# Let a team bypass the repo's "Default branch: ..." rulesets. -Web opens them in the browser instead.
 function ghrule {
-    [CmdletBinding()]
-    param ()
+    [CmdletBinding(SupportsShouldProcess)]
+    param (
+        [string] $Team = 'aks-admins',
+        [ValidateSet('always', 'pull_request', 'exempt')]
+        [string] $BypassMode = 'always',
+        [switch] $Web
+    )
 
     $pages = gh api 'repos/{owner}/{repo}/rulesets?includes_parents=false&per_page=100' --paginate --slurp
     if ($LASTEXITCODE -ne 0) {
@@ -409,13 +428,48 @@ function ghrule {
         return
     }
 
-    $repoUrl = gh repo view --json url --jq .url
-    if ($LASTEXITCODE -ne 0) {
-        throw "Failed to resolve the repository URL with gh."
+    if ($Web) {
+        $repoUrl = gh repo view --json url --jq .url
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to resolve the repository URL with gh."
+        }
+
+        foreach ($ruleset in $rulesets) {
+            Start-Process "$repoUrl/settings/rules/$($ruleset.id)" -ErrorAction Stop
+        }
+        return
     }
 
+    $teamId = gh api "orgs/{owner}/teams/$Team" --jq .id
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to look up team '$Team' in the repository owner's organization."
+    }
+    $teamId = [long]$teamId
+
     foreach ($ruleset in $rulesets) {
-        Start-Process "$repoUrl/settings/rules/$($ruleset.id)" -ErrorAction Stop
+        $full = gh api "repos/{owner}/{repo}/rulesets/$($ruleset.id)" | ConvertFrom-Json
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to read ruleset $($ruleset.id) with gh."
+        }
+
+        $isTeam = { $_.actor_type -eq 'Team' -and $_.actor_id -eq $teamId }
+        $current = @($full.bypass_actors | Where-Object $isTeam)
+        if ($current.Count -and $current[0].bypass_mode -eq $BypassMode) {
+            Write-Host "'$($full.name)': $Team already bypasses ($BypassMode)" -ForegroundColor DarkGray
+            continue
+        }
+
+        $actors = @($full.bypass_actors | Where-Object { -not (& $isTeam) }) +
+        [pscustomobject]@{ actor_id = $teamId; actor_type = 'Team'; bypass_mode = $BypassMode }
+
+        if ($PSCmdlet.ShouldProcess($full.name, "Allow team '$Team' to bypass ($BypassMode)")) {
+            @{ bypass_actors = $actors } | ConvertTo-Json -Depth 5 -Compress |
+            gh api -X PUT "repos/{owner}/{repo}/rulesets/$($ruleset.id)" --input - --silent
+            if ($LASTEXITCODE -ne 0) {
+                throw "Failed to update ruleset '$($full.name)'."
+            }
+            Write-Host "'$($full.name)': $Team can now bypass ($BypassMode)" -ForegroundColor Green
+        }
     }
 }
 
