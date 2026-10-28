@@ -298,6 +298,152 @@ function Authenticate-Databricks {
     databricks configure --host https://xxx.azuredatabricks.net --aad-token --jobs-api-version 2.1
 }
 
+# Activate an eligible PIM role (default MAP Admin Contributor) scoped to one subscription.
+# Every activation requires an interactive step-up sign-in (Conditional Access authentication context).
+function pim {
+    [CmdletBinding(SupportsShouldProcess)]
+    param (
+        [Parameter(Mandatory, Position = 0)][string] $Subscription,
+        [string] $Role = 'MAP Admin Contributor',
+        [ValidateRange(1, 24)][int] $Hours = 4,
+        [string] $Justification = 'Activated via powershell function call',
+        # Authentication context ID required by the PIM activation policy
+        [string] $AuthContext = 'c1'
+    )
+
+    $sub = az account list --all --query "[?name=='$Subscription' || id=='$Subscription'] | [0]" -o json | ConvertFrom-Json
+    if (-not $sub) {
+        Write-Warning "Subscription '$Subscription' not found. Run 'az account list --all' or 'az login'."
+        return
+    }
+
+    # Regular (non-elevated) token: only used to read eligibilities and identify the user
+    $getToken = {
+        $t = az account get-access-token --tenant $sub.tenantId --query accessToken -o tsv
+        if ($LASTEXITCODE -ne 0 -or -not $t) { throw "Could not get an ARM token from az. Run 'az login'." }
+        $t
+    }
+    $token = & $getToken
+    $claims = $token.Split('.')[1].Replace('-', '+').Replace('_', '/')
+    $claims = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($claims.PadRight($claims.Length + (4 - $claims.Length % 4) % 4, '='))) | ConvertFrom-Json
+    $headers = @{ Authorization = "Bearer $token" }
+    $arm = 'https://management.azure.com'
+
+    $eligible = @((Invoke-RestMethod -Headers $headers "$arm/providers/Microsoft.Authorization/roleEligibilityScheduleInstances?api-version=2020-10-01&`$filter=asTarget()").value.properties |
+        Where-Object { $_.expandedProperties.roleDefinition.displayName -eq $Role })
+    # Eligibility is inherited from a management group/root; the API rejects it if it doesn't cover the subscription
+    $eligibility = $eligible | Where-Object scope -NotLike '/subscriptions/*' | Select-Object -First 1
+    if (-not $eligibility) {
+        $where = ($eligible.expandedProperties.scope.displayName | Sort-Object -Unique) -join ', '
+        Write-Warning "No '$Role' eligibility covering '$($sub.name)'. Eligible at: $(if ($where) { $where } else { 'nothing' })"
+        return
+    }
+
+    $scope = "/subscriptions/$($sub.id)"
+    $body = @{
+        properties = @{
+            principalId                     = $claims.oid
+            roleDefinitionId                = "$scope/providers/Microsoft.Authorization/roleDefinitions/$(Split-Path $eligibility.roleDefinitionId -Leaf)"
+            requestType                     = 'SelfActivate'
+            linkedRoleEligibilityScheduleId = $eligibility.roleEligibilityScheduleId
+            justification                   = $Justification
+            scheduleInfo                    = @{ expiration = @{ type = 'AfterDuration'; duration = "PT${Hours}H" } }
+        }
+    } | ConvertTo-Json -Depth 5
+
+    if (-not $PSCmdlet.ShouldProcess($sub.name, "Activate '$Role' for $Hours h")) { return }
+
+    # Always step up interactively via an OAuth code + PKCE flow in the browser, without az: the elevated token
+    # is never cached anywhere, so scripts/agents using az cannot reuse it to activate roles without a human doing MFA
+    $claimsRequest = @{ access_token = @{ acrs = @{ essential = $true; value = $AuthContext } } } | ConvertTo-Json -Depth 3 -Compress
+    $b64url = { param($bytes) [Convert]::ToBase64String($bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_') }
+    $verifier = & $b64url ([Security.Cryptography.RandomNumberGenerator]::GetBytes(32))
+    $state = [guid]::NewGuid().ToString('N')
+    $tcp = [Net.Sockets.TcpListener]::new([Net.IPAddress]::Loopback, 0); $tcp.Start(); $port = $tcp.LocalEndpoint.Port; $tcp.Stop()
+    $redirect = "http://localhost:$port/"
+    $clientId = '04b07795-8ddb-461a-bbee-02f9e1bf7b46' # Azure CLI public client
+    $authority = "https://login.microsoftonline.com/$($sub.tenantId)/oauth2/v2.0"
+    $scopes = 'https://management.core.windows.net//.default openid'
+    $query = [ordered]@{
+        client_id             = $clientId
+        response_type         = 'code'
+        redirect_uri          = $redirect
+        scope                 = $scopes
+        state                 = $state
+        code_challenge        = & $b64url ([Security.Cryptography.SHA256]::HashData([Text.Encoding]::ASCII.GetBytes($verifier)))
+        code_challenge_method = 'S256'
+        claims                = $claimsRequest
+        login_hint            = $sub.user.name
+    }
+    $authorizeUrl = "$authority/authorize?" + (($query.GetEnumerator() | ForEach-Object { "$($_.Key)=$([uri]::EscapeDataString($_.Value))" }) -join '&')
+
+    $listener = [Net.HttpListener]::new()
+    $listener.Prefixes.Add($redirect)
+    try {
+        $listener.Start()
+        Write-Host "Step-up sign-in for PIM as $($sub.user.name): complete MFA in the browser..." -ForegroundColor Yellow
+        Start-Process $authorizeUrl
+        $pending = $listener.GetContextAsync()
+        $deadline = (Get-Date).AddMinutes(5)
+        while (-not $pending.Wait(500)) {
+            if ((Get-Date) -gt $deadline) { throw "Step-up sign-in timed out." }
+        }
+        $ctx = $pending.Result
+        $reply = [ordered]@{}
+        $ctx.Request.Url.Query.TrimStart('?') -split '&' | Where-Object { $_ } | ForEach-Object {
+            $k, $v = $_ -split '=', 2; $reply[$k] = [uri]::UnescapeDataString("$v".Replace('+', ' '))
+        }
+        $page = [Text.Encoding]::UTF8.GetBytes("<html><body style='font-family:sans-serif'><h3>PIM sign-in $(if ($reply.code) { 'complete' } else { 'failed' }). You can close this tab.</h3></body></html>")
+        $ctx.Response.ContentType = 'text/html'
+        $ctx.Response.OutputStream.Write($page, 0, $page.Length)
+        $ctx.Response.Close()
+    }
+    finally {
+        $listener.Close()
+    }
+    if ($reply.state -ne $state) { throw "Step-up sign-in returned an unexpected state. Aborting." }
+    if (-not $reply.code) { throw "Step-up sign-in failed: $($reply.error) $($reply.error_description)" }
+    $stepUp = (Invoke-RestMethod -Method Post -Uri "$authority/token" -Body @{
+            client_id     = $clientId
+            grant_type    = 'authorization_code'
+            code          = $reply.code
+            redirect_uri  = $redirect
+            code_verifier = $verifier
+            scope         = $scopes
+        }).access_token
+
+    $p = $stepUp.Split('.')[1].Replace('-', '+').Replace('_', '/')
+    $stepUpClaims = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($p.PadRight($p.Length + (4 - $p.Length % 4) % 4, '='))) | ConvertFrom-Json
+    if ($stepUpClaims.oid -ne $claims.oid) {
+        throw "Step-up sign-in used a different account ($($stepUpClaims.upn)). Aborting."
+    }
+
+    $uri = "$arm$scope/providers/Microsoft.Authorization/roleAssignmentScheduleRequests/$([guid]::NewGuid())?api-version=2020-10-01"
+    try {
+        $res = Invoke-RestMethod -Method Put -Headers @{ Authorization = "Bearer $stepUp" } -Uri $uri -Body $body -ContentType 'application/json'
+    }
+    catch {
+        $err = ($_.ErrorDetails.Message | ConvertFrom-Json -ErrorAction Ignore).error
+        if ($err.code -eq 'RoleAssignmentExists') {
+            Write-Host "'$Role' is already active on $($sub.name)" -ForegroundColor DarkGray
+            return
+        }
+        throw "PIM activation failed: $(if ($err) { "$($err.code): $($err.message)" } else { $_ })"
+    }
+    finally {
+        $stepUp = $null
+    }
+    Write-Host "'$Role' on " -NoNewline
+    Write-Host $sub.name -ForegroundColor Green -NoNewline
+    Write-Host " for $Hours h: $($res.properties.status)" -ForegroundColor Yellow
+}
+
+Register-ArgumentCompleter -CommandName pim -ParameterName Subscription -ScriptBlock {
+    param($commandName, $parameterName, $wordToComplete)
+    az account list --all --query '[].name' -o tsv 2>$null | Where-Object { $_ -like "$wordToComplete*" } |
+    ForEach-Object { if ($_ -match '\s') { "'$_'" } else { $_ } }
+}
+
 function gcom() {
     [CmdletBinding()]
     param (
