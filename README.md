@@ -2,9 +2,19 @@
 
 Most changes in the folder ./startup.
 If you want to use the startup settings I suggest you fork this repo, make your changes, then run this command:
-`cp ./startup/boot.cmd shell:startup`
+`cp ./startup/script/boot.cmd shell:startup`
 
 This will make everything in the startup folder be used at startup.
+
+## PowerShell profile
+
+`startup/raw/profile.ps1` is installed to `$PROFILE.CurrentUserAllHosts` by the boot scripts.
+
+- Hold `Ctrl` while the shell starts to skip oh-my-posh and Terminal-Icons.
+- Terminal-Icons is imported once the prompt is idle, so it does not delay startup.
+- Tab completion for `kubectl`/`k`, `helm`/`he`, `flux` and `gh` is generated on first
+  `<Tab>` and cached in `%LOCALAPPDATA%\pwsh-completions`. The cache refreshes when the
+  executable is updated; delete the folder to force a refresh.
 
 ## PowerShell GitHub helpers
 

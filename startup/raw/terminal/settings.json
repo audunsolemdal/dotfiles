@@ -1,4 +1,4 @@
-// eq - %LOCALAPPDATA%\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\profiles.json
+// eq - %LOCALAPPDATA%\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState\settings.json
 // To view the default settings, hold "alt" while clicking on the "Settings" button.
 // For documentation on these settings, see: https://aka.ms/terminal-documentation
 {
@@ -6,320 +6,158 @@
   "defaultProfile": "{574e775e-4f2a-5b96-ac1e-a2962a402336}",
   "initialCols": 128,
   "initialRows": 38,
-  "windowRestoreMode": "lastPositionAndSize",
-  "useTabSwitcher": true,
+  // Reopen with the previous window position, size, tabs and panes
+  "firstWindowPreference": "persistedLayout",
+  "tabSwitcherMode": "mru",
   // Selection
   "copyOnSelect": false,
   "copyFormatting": true,
-  "wordDelimiters": " /\\()\"'-.,:;<>~!@#$%^&*|+=[]{}~?\u2502",
-  "profiles": [
-    {
-      "guid": "{574e775e-4f2a-5b96-ac1e-a2962a402336}",
-      // Make changes here to the pwsh.exe profile
-      "acrylicOpacity": 1,
-      //"useAcrylic": true,
-      "background": "#000000",
-      "backgroundImage": "C:\\Appl\\Repos\\dotfiles\\startup\\img\\pwsh.jpg",
+  // Default delimiters minus "-" and ".", so double-click selects whole
+  // resource names, hostnames, file names and IPs
+  "wordDelimiters": " /\\()\"',:;<>~!@#$%^&*|+=[]{}~?\u2502",
+  "profiles": {
+    // Shared by every profile below unless overridden
+    "defaults": {
       "backgroundImageOpacity": 0.17,
-      "backgroundImageStechMode": "uniformToFill",
       "colorScheme": "Campbell",
-      "cursorHeight": 25,
-      "fontFace": "LiterationMono Nerd Font Mono",
-      "fontSize": 15,
-      "icon": "ms-appdata:///roaming/pwsh-32.png",
-      "name": "PowerShell 7.x",
+      "font": {
+        "face": "LiterationMono Nerd Font Mono",
+        "size": 15
+      },
       "padding": "10, 10, 0, 10",
-      "hidden": false,
-      "startingDirectory": "c:/appl/repos/miljodir/iac",
-      "source": "Windows.Terminal.PowershellCore"
+      // Prompts are marked automatically; ctrl+up/down jumps between them
+      "showMarksOnScrollbar": true
     },
-    {
-      "guid": "{c6eaf9f4-32a7-5fdc-b5cf-066e8a4b1e40}",
-      "hidden": true // hide bugged ubuntu 18.04
-    },
-    {
-      "guid": "{0caa0dad-35be-5f56-a8ff-afceeeaa6101}",
-      "hidden": true // hide CMD
-    },
-    {
-      "guid": "{b453ae62-4e3d-5e58-b989-0a998ec441b8}",
-      "hidden": true // hide azure cloud shell
-    },
-    {
-      "guid": "{61c54bbd-c2c6-5271-96e7-009a87ff44bf}",
-      "hidden": true // hide windows powershell
-    },
-    {
-      "guid": "{07b52e3e-de2c-5db4-bd2d-ba144ed6c273}",
-      "hidden": false,
-      "name": "Ubuntu-20.04",
-      "source": "Windows.Terminal.Wsl",
-      // Make changes here to the wsl.exe profile
-      "acrylicOpacity": 1,
-      //"useAcrylic": true,
-      "backgroundImage": "C:\\Appl\\Repos\\dotfiles\\startup\\img\\linux.jpg",
-      "backgroundImageOpacity": 0.17,
-      "backgroundImageStechMode": "uniformToFill",
-      "padding": "10, 10, 0, 10",
-      "startingDirectory": "/mnt/c/Appl/repos",
-      "colorScheme": "Campbell",
-      "cursorHeight": 25,
-      "fontFace": "mesloLGS NF",
-      "fontSize": 15
-    },
-    {
-      "guid": "{b091671b-cbd8-4bf4-86e8-55f57173be34}",
-      "background": "#000000",
-      "backgroundImage": "C:\\Appl\\Repos\\dotfiles\\startup\\img\\pwsh.jpg",
-      "backgroundImageOpacity": 0.17,
-      "commandline": "C:\\Program Files\\PowerShell\\7-preview\\pwsh.exe",
-      "icon": "ms-appx:///ProfileIcons/pwsh-preview.png",
-      "name": "PowerShell 7 Preview",
-      "padding": "10, 10, 0, 10",
-      "hidden": true,
-      "startingDirectory": "c:/appl/repos",
-      "colorScheme": "Campbell",
-      "cursorHeight": 25,
-      "fontFace": "LiterationMono Nerd Font Mono",
-      "fontSize": 15,
-    }
-  ],
+    "list": [
+      {
+        "guid": "{574e775e-4f2a-5b96-ac1e-a2962a402336}",
+        // Make changes here to the pwsh.exe profile
+        "name": "PowerShell 7.x",
+        "source": "Windows.Terminal.PowershellCore",
+        "hidden": false,
+        "background": "#000000",
+        "backgroundImage": "C:\\appl\\repos\\personal\\dotfiles\\startup\\img\\pwsh.jpg",
+        "startingDirectory": "c:/appl/repos/miljodir/iac"
+      },
+      {
+        "guid": "{c6eaf9f4-32a7-5fdc-b5cf-066e8a4b1e40}",
+        "name": "Ubuntu-18.04",
+        "hidden": true // hide bugged ubuntu 18.04
+      },
+      {
+        "guid": "{0caa0dad-35be-5f56-a8ff-afceeeaa6101}",
+        "name": "Command Prompt",
+        "hidden": true
+      },
+      {
+        "guid": "{b453ae62-4e3d-5e58-b989-0a998ec441b8}",
+        "name": "Azure Cloud Shell",
+        "hidden": true
+      },
+      {
+        "guid": "{61c54bbd-c2c6-5271-96e7-009a87ff44bf}",
+        "name": "Windows PowerShell",
+        "hidden": true
+      },
+      {
+        "guid": "{07b52e3e-de2c-5db4-bd2d-ba144ed6c273}",
+        // Make changes here to the wsl.exe profile
+        "name": "Ubuntu-20.04",
+        "source": "Windows.Terminal.Wsl",
+        "hidden": false,
+        "backgroundImage": "C:\\appl\\repos\\personal\\dotfiles\\startup\\img\\linux.jpg",
+        "startingDirectory": "/mnt/c/Appl/repos",
+        "font": {
+          "face": "MesloLGS NF",
+          "size": 15
+        }
+      },
+      {
+        "guid": "{b091671b-cbd8-4bf4-86e8-55f57173be34}",
+        "name": "PowerShell 7 Preview",
+        "commandline": "C:\\Program Files\\PowerShell\\7-preview\\pwsh.exe",
+        "icon": "ms-appx:///ProfileIcons/pwsh-preview.png",
+        "hidden": true,
+        "background": "#000000",
+        "backgroundImage": "C:\\appl\\repos\\personal\\dotfiles\\startup\\img\\pwsh.jpg",
+        "startingDirectory": "c:/appl/repos"
+      }
+    ]
+  },
   // Add custom color schemes to this array
   "schemes": [],
-  // Add any keybinding overrides to this array.
-  // To unbind a default keybinding, set the command to "unbound"
-  "keybindings": [
-    // Settings
-    {
-      "command": "openSettings",
-      "keys": "ctrl+,"
-    },
-    {
-      "command": "commandPalette",
-      "keys": "ctrl+shift+p"
-    },
-    {
-      "command": "toggleFocusMode",
-      "keys": "alt+f"
-    },
+  // Custom commands. Built-in commands are referenced by their "Terminal.*" id below.
+  "actions": [
     {
       "command": {
         "action": "setTabColor",
         "color": "#ffffff"
       },
-      "keys": "ctrl+a"
+      "id": "User.SetTabColorWhite"
     },
     {
-      "command": "toggleRetroEffect",
-      "keys": "ctrl+d"
-    },
-    // Tabs general
-    {
-      "command": "newTab",
-      "keys": "ctrl+t"
-    },
-    {
-      "command": "closePane",
-      "keys": "ctrl+w"
-    },
-    {
-      "command": "nextTab",
-      "keys": "ctrl+tab"
-    },
-    {
-      "command": "prevTab",
-      "keys": "ctrl+shift+tab"
-    },
-    // Tab switches
-    {
-      "command": {
-        "action": "switchToTab",
-        "index": 0
-      },
-      "keys": "ctrl+1"
-    },
-    {
-      "command": {
-        "action": "switchToTab",
-        "index": 1
-      },
-      "keys": "ctrl+2"
-    },
-    {
-      "command": {
-        "action": "switchToTab",
-        "index": 2
-      },
-      "keys": "ctrl+3"
-    },
-    {
-      "command": {
-        "action": "switchToTab",
-        "index": 3
-      },
-      "keys": "ctrl+4"
-    },
-    {
-      "command": {
-        "action": "switchToTab",
-        "index": 4
-      },
-      "keys": "ctrl+5"
-    },
-    {
-      "command": {
-        "action": "switchToTab",
-        "index": 5
-      },
-      "keys": "ctrl+6"
-    },
-    {
-      "command": {
-        "action": "switchToTab",
-        "index": 6
-      },
-      "keys": "ctrl+7"
-    },
-    {
-      "command": {
-        "action": "switchToTab",
-        "index": 7
-      },
-      "keys": "ctrl+8"
+      "command": "toggleShaderEffects",
+      "id": "User.ToggleShaderEffects"
     },
     {
       "command": {
         "action": "switchToTab",
         "index": 8
       },
-      "keys": "ctrl+9"
-    },
-    // Clipboard Integration
-    {
-      "command": {
-        "action": "copy",
-        "singleLine": false
-      },
-      "keys": "ctrl+shift+c"
+      "id": "User.SwitchToTab8"
     },
     {
       "command": {
-        "action": "copy",
-        "singleLine": false
+        "action": "scrollToMark",
+        "direction": "previous"
       },
-      "keys": "ctrl+insert"
-    },
-    {
-      "command": "paste",
-      "keys": "ctrl+shift+v"
-    },
-    {
-      "command": "paste",
-      "keys": "shift+insert"
-    },
-    // Split
-    {
-      "command": {
-        "action": "splitPane",
-        "split": "horizontal"
-      },
-      "keys": "alt+shift+up"
+      "id": "User.ScrollToPreviousMark"
     },
     {
       "command": {
-        "action": "splitPane",
-        "split": "vertical"
+        "action": "scrollToMark",
+        "direction": "next"
       },
-      "keys": "alt+shift+right"
-    },
-    {
-      "command": {
-        "action": "splitPane",
-        "split": "horizontal"
-      },
-      "keys": "alt+shift+down"
-    },
-    {
-      "command": {
-        "action": "splitPane",
-        "split": "vertical"
-      },
-      "keys": "alt+shift+left"
-    },
-    // Scrollback
-    {
-      "command": "scrollDown",
-      "keys": "shift+down"
-    },
-    {
-      "command": "scrollDownPage",
-      "keys": "pgdn"
-    },
-    {
-      "command": "scrollUp",
-      "keys": "shift+up"
-    },
-    {
-      "command": "scrollUpPage",
-      "keys": "pgup"
-    },
-    // Focus
-    {
-      "command": {
-        "action": "moveFocus",
-        "direction": "down"
-      },
-      "keys": "alt+down"
-    },
-    {
-      "command": {
-        "action": "moveFocus",
-        "direction": "left"
-      },
-      "keys": "alt+left"
-    },
-    {
-      "command": {
-        "action": "moveFocus",
-        "direction": "right"
-      },
-      "keys": "alt+right"
-    },
-    {
-      "command": {
-        "action": "moveFocus",
-        "direction": "up"
-      },
-      "keys": "alt+up"
-    },
-    // Resize pane
-    {
-      "command": {
-        "action": "resizePane",
-        "direction": "down"
-      },
-      "keys": "ctrl+shift+down"
-    },
-    {
-      "command": {
-        "action": "resizePane",
-        "direction": "left"
-      },
-      "keys": "ctrl+shift+left"
-    },
-    {
-      "command": {
-        "action": "resizePane",
-        "direction": "right"
-      },
-      "keys": "ctrl+shift+right"
-    },
-    {
-      "command": {
-        "action": "resizePane",
-        "direction": "up"
-      },
-      "keys": "ctrl+shift+up"
+      "id": "User.ScrollToNextMark"
     }
+  ],
+  // Overrides of the defaults only (command palette, ctrl+tab, copy/paste and
+  // alt+arrow focus are already bound by default). To unbind a key, set "id": null.
+  "keybindings": [
+    // Settings
+    { "id": "Terminal.OpenSettingsFile", "keys": "ctrl+," },
+    { "id": "Terminal.ToggleFocusMode", "keys": "alt+f" },
+    { "id": "User.SetTabColorWhite", "keys": "ctrl+a" },
+    { "id": "User.ToggleShaderEffects", "keys": "ctrl+d" },
+    // Tabs general
+    { "id": "Terminal.OpenNewTab", "keys": "ctrl+t" },
+    { "id": "Terminal.ClosePane", "keys": "ctrl+w" },
+    // Tab switches
+    { "id": "Terminal.SwitchToTab0", "keys": "ctrl+1" },
+    { "id": "Terminal.SwitchToTab1", "keys": "ctrl+2" },
+    { "id": "Terminal.SwitchToTab2", "keys": "ctrl+3" },
+    { "id": "Terminal.SwitchToTab3", "keys": "ctrl+4" },
+    { "id": "Terminal.SwitchToTab4", "keys": "ctrl+5" },
+    { "id": "Terminal.SwitchToTab5", "keys": "ctrl+6" },
+    { "id": "Terminal.SwitchToTab6", "keys": "ctrl+7" },
+    { "id": "Terminal.SwitchToTab7", "keys": "ctrl+8" },
+    { "id": "User.SwitchToTab8", "keys": "ctrl+9" },
+    // Split in the direction of the arrow
+    { "id": "Terminal.SplitPaneUp", "keys": "alt+shift+up" },
+    { "id": "Terminal.SplitPaneRight", "keys": "alt+shift+right" },
+    { "id": "Terminal.SplitPaneDown", "keys": "alt+shift+down" },
+    { "id": "Terminal.SplitPaneLeft", "keys": "alt+shift+left" },
+    // Scrollback
+    { "id": "Terminal.ScrollDown", "keys": "shift+down" },
+    { "id": "Terminal.ScrollDownPage", "keys": "pgdn" },
+    { "id": "Terminal.ScrollUp", "keys": "shift+up" },
+    { "id": "Terminal.ScrollUpPage", "keys": "pgup" },
+    { "id": "User.ScrollToPreviousMark", "keys": "ctrl+up" },
+    { "id": "User.ScrollToNextMark", "keys": "ctrl+down" },
+    // Resize pane
+    { "id": "Terminal.ResizePaneDown", "keys": "ctrl+shift+down" },
+    { "id": "Terminal.ResizePaneLeft", "keys": "ctrl+shift+left" },
+    { "id": "Terminal.ResizePaneRight", "keys": "ctrl+shift+right" },
+    { "id": "Terminal.ResizePaneUp", "keys": "ctrl+shift+up" }
   ]
 }
