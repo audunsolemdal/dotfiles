@@ -1,37 +1,100 @@
-# cp ./startup/raw/profile.ps1 $PROFILE.AllUsersAllHosts
+# Copy-Item ./startup/raw/profile.ps1 $PROFILE.CurrentUserAllHosts
+
+$DotfilesRoot = "C:\appl\repos\personal\dotfiles"
 
 # Default folder
 $env:HOME = "C:\Appl"
 # HOME override makes oh-my-posh look for C:\Appl\.azure; az CLI uses USERPROFILE
 $env:AZURE_CONFIG_DIR = "$env:USERPROFILE\.azure"
 
+if (($env:PATH -split ';') -notcontains "C:\appl") {
+    $env:PATH += ";C:\appl"
+}
+
 # Hold control to skip import of modules, credit @VladimirReshetnikov
-Add-Type -AssemblyName WindowsBase
-Add-Type -AssemblyName PresentationCore
-if (-not [Windows.Input.Keyboard]::IsKeyDown([System.Windows.Input.Key]::LeftCtrl)) {
-    # Critical Modules
-    Import-Module "Terminal-icons"
-    oh-my-posh init pwsh --config C:\appl\repos\personal\dotfiles\startup\oh-my-posh\agnoster-customized.json | Invoke-Expression
+Add-Type -AssemblyName System.Windows.Forms
+if (-not ([System.Windows.Forms.Control]::ModifierKeys -band [System.Windows.Forms.Keys]::Control)) {
+    oh-my-posh init pwsh --config "$DotfilesRoot\startup\oh-my-posh\agnoster-customized.json" | Invoke-Expression
+
+    # Terminal-Icons only affects Get-ChildItem formatting and takes ~0.7s to import,
+    # so load it once the prompt is idle instead of blocking startup
+    $null = Register-EngineEvent -SourceIdentifier PowerShell.OnIdle -MaxTriggerCount 1 -Action {
+        Import-Module Terminal-Icons -Global
+    }
+}
+
+# Native CLI tab completion. Completer scripts are generated into a cache on first <Tab>
+# (and again whenever the executable is updated), so they add nothing to startup time.
+$CompletionCommands = @{
+    kubectl = "completion", "powershell"
+    helm    = "completion", "powershell"
+    flux    = "completion", "powershell"
+    gh      = "completion", "-s", "powershell"
+}
+$CompletionBlocks = @{}
+
+function Get-CachedCompleter([string]$Command) {
+    if ($CompletionBlocks.ContainsKey($Command)) { return $CompletionBlocks[$Command] }
+
+    $exe = Get-Command $Command -CommandType Application -ErrorAction Ignore | Select-Object -First 1
+    if (-not $exe) { return }
+
+    $cacheDir = Join-Path $env:LOCALAPPDATA "pwsh-completions"
+    $cache = Join-Path $cacheDir "$Command.ps1"
+    if (-not (Test-Path $cache) -or (Get-Item $cache).LastWriteTime -lt (Get-Item $exe.Source).LastWriteTime) {
+        $null = New-Item -ItemType Directory -Path $cacheDir -Force
+        # Helper functions must be global, since the script is dot-sourced inside this function
+        & $exe.Source @($CompletionCommands[$Command]) 2>$null |
+        ForEach-Object { $_ -replace '^(\s*)(function|filter) (?!global:)', '$1$2 global:' } |
+        Set-Content -Path $cache -Encoding utf8
+    }
+
+    . $cache
+    $CompletionBlocks[$Command] = Get-Variable -Name "__${Command}CompleterBlock" -ValueOnly -ErrorAction Ignore
+    $CompletionBlocks[$Command]
+}
+
+Register-ArgumentCompleter -Native -CommandName ([string[]]$CompletionCommands.Keys + "k", "he") -ScriptBlock {
+    param($wordToComplete, $commandAst, $cursorPosition)
+    $name = $commandAst.GetCommandName()
+    if ($alias = Get-Alias $name -ErrorAction Ignore) { $name = $alias.Definition }
+    if ($block = Get-CachedCompleter ([IO.Path]::GetFileNameWithoutExtension($name))) {
+        & $block $wordToComplete $commandAst $cursorPosition
+    }
 }
 
 $PSDefaultParameterValues["Out-Default:OutVariable"] = "__" # $__ = last output
-if ($Host.Name -eq "ConsoleHost" -and $Host.UI.SupportsVirtualTerminal -and -not [Console]::IsOutputRedirected -and (Get-Command Set-PSReadLineOption -ErrorAction SilentlyContinue)) {
-    Set-PSReadLineOption -PredictionSource HistoryAndPlugin
+if ($Host.Name -eq "ConsoleHost" -and $Host.UI.SupportsVirtualTerminal -and -not [Console]::IsOutputRedirected -and (Get-Command Set-PSReadLineOption -ErrorAction Ignore)) {
+    Set-PSReadLineOption -PredictionSource HistoryAndPlugin -HistoryNoDuplicates -HistorySearchCursorMovesToEnd
+    # Up/Down only walk history entries that start with what is already typed
+    Set-PSReadLineKeyHandler -Key UpArrow -Function HistorySearchBackward
+    Set-PSReadLineKeyHandler -Key DownArrow -Function HistorySearchForward
 }
 
 # Alias
 
-Set-Alias grep select-string
+Set-Alias grep Select-String
 Set-Alias d docker
 Set-Alias doc docker-compose
 Set-Alias k kubectl.exe
 Set-Alias he helm.exe
-New-Alias which get-command
+Set-Alias which Get-Command
 
 # Bash functionality
 
-function touch ($name) {
-    New-Item -Path . -Name $name
+function touch {
+    param (
+        [Parameter(Mandatory, ValueFromRemainingArguments)]
+        [string[]] $Path
+    )
+    foreach ($p in $Path) {
+        if (Test-Path -LiteralPath $p) {
+            (Get-Item -LiteralPath $p).LastWriteTime = Get-Date
+        }
+        else {
+            $null = New-Item -ItemType File -Path $p
+        }
+    }
 }
 
 function WingetRun {
@@ -42,58 +105,111 @@ function WingetRun {
     Start-Process microsoft-edge:https://winget.run/search?query=$packageName 
 }
 
-Set-Alias -name touch -Value TouchFile
-
 # Azure handy
 
 # Containers
 
-function KUp($name) {
-    $m = kubectl get deployments --all-namespaces | Select-String -Pattern $name -SimpleMatch -NoEmphasis | Out-String | % { $_.split(" ")[0] }
-    $n = $m.Substring(2)
+# Resolve the namespace of a deployment (or the namespace itself) matching $Name.
+# Refuses to guess when several namespaces match, since callers scale everything in it.
+function Get-KDeploymentNamespace {
+    param (
+        [Parameter(Mandatory)][string] $Name
+    )
+    $namespaces = @(kubectl get deployments --all-namespaces --no-headers -o 'custom-columns=NS:.metadata.namespace,NAME:.metadata.name' |
+        Where-Object { $_ -like "*$Name*" } |
+        ForEach-Object { ($_ -split '\s+')[0] } |
+        Select-Object -Unique)
 
-    kubectl scale deployments -n $n --replicas=1 --all
+    if ($namespaces -contains $Name) { return $Name }
+    if ($namespaces.Count -eq 1) { return $namespaces[0] }
+    if ($namespaces.Count -eq 0) {
+        Write-Warning "No deployment or namespace matching '$Name'."
+    }
+    else {
+        Write-Warning "'$Name' matches several namespaces: $($namespaces -join ', '). Be more specific."
+    }
+}
+
+function KUp($name) {
+    if ($n = Get-KDeploymentNamespace $name) {
+        kubectl scale deployments -n $n --replicas=1 --all
+    }
 }
 
 function KDown($name) {
-    $m = kubectl get deployments --all-namespaces | Select-String -Pattern $name -SimpleMatch -NoEmphasis | Out-String | % { $_.split(" ")[0] }
-    $n = $m.Substring(2)
-
-    kubectl scale deployments -n $n --replicas=0 --all
+    if ($n = Get-KDeploymentNamespace $name) {
+        kubectl scale deployments -n $n --replicas=0 --all
+    }
 }
 
+# Rolling restart keeps the current replica count and avoids downtime
 function KRe($name) {
-    $m = kubectl get deployments --all-namespaces | Select-String -Pattern $name -SimpleMatch -NoEmphasis | Out-String | % { $_.split(" ")[0] }
-    $n = $m.Substring(2)
-
-    kubectl scale deployments -n $n --replicas=0 --all
-    kubectl scale deployments -n $n --replicas=1 --all
+    if ($n = Get-KDeploymentNamespace $name) {
+        kubectl rollout restart deployments -n $n
+    }
 }
 
-function KCon($con) {
-    $o = "sdpaks-$con-k8s"
-    kubectl config use-context $o
+function KNs {
+    param (
+        [Parameter(Mandatory)][string] $Namespace
+    )
+    $con = kubectl config current-context
+    # set-context succeeds for any name, so check the namespace exists first
+    kubectl get namespace $Namespace -o name *> $null
+    if ($LASTEXITCODE -ne 0) {
+        Write-Warning "Namespace '$Namespace' not found in $con."
+        return
+    }
 
-    if ($?) {
-        Write-host "Currently in " -NoNewline
+    kubectl config set-context --current --namespace=$Namespace | Out-Null
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "Currently at " -NoNewline -ForegroundColor Yellow
+        Write-Host $Namespace -ForegroundColor Cyan -NoNewline
+        Write-Host " namespace in " -ForegroundColor Yellow -NoNewline
         Write-Host $con -ForegroundColor Green -NoNewline
         Write-Host " cluster" -ForegroundColor Yellow
     }
 }
 
-function KNs($name) {
-    # always returns true.. nneed workaround
-    kubectl config set-context --current --namespace=$name
-    if ($?) {
-        $con = kubectl config current-context  
-        Write-host "Currently at " -NoNewline -ForegroundColor Yellow
-        Write-Host  $name -ForegroundColor Cyan -NoNewline
-        Write-Host " namespace in "  -ForegroundColor Yellow -NoNewline
-        Write-Host $con -ForegroundColor Green -NoNewline
-        Write-Host " cluster" -ForegroundColor Yellow
+function Get-KNamespaceName {
+    # Run detached with a hard timeout: auth plugins (kubelogin) can block forever waiting
+    # for an interactive login, which would freeze tab completion
+    $psi = [System.Diagnostics.ProcessStartInfo]::new((Get-Command kubectl -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source)
+    'get', 'namespaces', '--no-headers', '-o', 'custom-columns=NAME:.metadata.name', '--request-timeout=5s' |
+    ForEach-Object { $psi.ArgumentList.Add($_) }
+    $psi.RedirectStandardOutput = $true
+    $psi.RedirectStandardError = $true
+    $psi.RedirectStandardInput = $true
+    $psi.CreateNoWindow = $true
+    $p = [System.Diagnostics.Process]::Start($psi)
+    $p.StandardInput.Close()
+    $p.StandardError.ReadToEndAsync() | Out-Null
+    $out = $p.StandardOutput.ReadToEndAsync()
+    if (-not $p.WaitForExit(6000)) {
+        $p.Kill($true)
+        return
     }
+    $out.Result -split "`r?`n" | Where-Object { $_ }
 }
 
+Register-ArgumentCompleter -CommandName KNs -ParameterName Namespace -ScriptBlock {
+    param($commandName, $parameterName, $wordToComplete)
+    Get-KNamespaceName | Where-Object { $_ -like "$wordToComplete*" }
+}
+
+# kubectx/kubens ship no PowerShell completion
+Register-ArgumentCompleter -Native -CommandName kubectx, kubens -ScriptBlock {
+    param($wordToComplete, $commandAst, $cursorPosition)
+    $names = if ($commandAst.GetCommandName() -match 'kubens') {
+        Get-KNamespaceName
+    }
+    else {
+        kubectl config get-contexts -o name 2>$null
+    }
+    $names | Where-Object { $_ -like "$wordToComplete*" } | ForEach-Object {
+        [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_)
+    }
+}
 
 function dup() {
     [CmdletBinding()]
@@ -103,7 +219,7 @@ function dup() {
     docker-compose up $name -d
 }
 
-Set-Alias doup docup
+Set-Alias doup dup
 
 function ddown() {
     [CmdletBinding()]
@@ -113,21 +229,19 @@ function ddown() {
     docker-compose down $name
 }
 
-function kexec() {
+# Prefer bash, fall back to sh for minimal images
+function kexec {
     [CmdletBinding()]
     param (
-        [string] $name
+        [Parameter(Mandatory, Position = 0)][string] $Pod,
+        [Parameter(Position = 1)][string] $Namespace
     )
-    try {
-        kubectl exec -it $name bash
-    }
-    catch {
-        kubectl exec -it $name sh
-    }
+    $nsArgs = if ($Namespace) { "-n", $Namespace } else { @() }
+    kubectl exec -it @nsArgs $Pod -- sh -c 'command -v bash >/dev/null 2>&1 && exec bash || exec sh'
 }
 
 function FSync() {
-    fluxctl.exe sync --k8s-fwd-ns flux
+    flux reconcile kustomization flux-system --with-source
 }
 
 # General bash-style aliases
@@ -142,7 +256,7 @@ New-BashStyleAlias .. 'cd ..'
 New-BashStyleAlias ... "cd ../../"
 New-BashStyleAlias .... "cd ../../../"
 New-BashStyleAlias ..... "cd ../../../../"
-New-BashStyleAlias cl "cd $$" # cd to last argument of previous folder
+New-BashStyleAlias cl 'cd $$' # cd to last argument of previous command
 
 # Git commands
 New-BashStyleAlias log "git log --oneline"
@@ -151,9 +265,8 @@ New-BashStyleAlias branch "git branch -a"
 New-BashStyleAlias status "git status"
 New-BashStyleAlias stash "git stash"
 New-BashStyleAlias pop "git stash pop"
-New-BashStyleAlias reset "git reset --soft"
 New-BashStyleAlias fetch "git fetch"
-New-BashStyleAlias push "git push origin head"
+New-BashStyleAlias push "git push origin HEAD"
 New-BashStyleAlias pull "git pull"
 New-BashStyleAlias recent "git for-each-ref --sort -committerdate refs/heads/"
 New-BashStyleAlias glog "git log --graph --pretty --oneline --abbrev-commit --decorate"
@@ -164,7 +277,7 @@ New-BashStyleAlias appl 'cd c:/appl'
 New-BashStyleAlias repos 'cd c:/appl/repos'
 New-BashStyleAlias path 'cd c:/appl/path'
 New-BashStyleAlias certs 'cd c:/appl/certs'
-New-BashStyleAlias dotfiles 'cd c:/appl/repos/personal/dotfiles'
+New-BashStyleAlias dotfiles "cd $DotfilesRoot"
 
 # paths
 
@@ -181,21 +294,8 @@ New-BashStyleAlias aks 'cd c:/appl/repos/miljodir/iac/cp-aks'
 New-BashStyleAlias prev "Get-Content (Get-PSReadlineOption).HistorySavePath"
 
 function Authenticate-Databricks {
-    $env:DATABRICKS_AAD_TOKEN = (az account get-access-token --resource 2ff814a6-3304-4ab8-85cb-cd0e6f879c1d) | convertfrom-json | Select-Object accessToken -ExpandProperty accessToken
+    $env:DATABRICKS_AAD_TOKEN = az account get-access-token --resource 2ff814a6-3304-4ab8-85cb-cd0e6f879c1d --query accessToken -o tsv
     databricks configure --host https://xxx.azuredatabricks.net --aad-token --jobs-api-version 2.1
-}
-
-
-function reset() {
-    [CmdletBinding()]
-    param (
-        [Parameter(ParameterSetName = "Default", Position = 0)]
-        $Mode = "soft"
-    )
-    $branch = (git rev-parse --abbrev-ref HEAD)
-    git reset --$Mode origin/$branch
-    git restore --staged .
-    status
 }
 
 function gcom() {
@@ -237,10 +337,12 @@ function gaddcom() {
 
 set-alias acom gaddcom
 
+# Reset the current branch to its origin counterpart (soft by default)
 function reset() {
     [CmdletBinding()]
     param (
         [Parameter(ParameterSetName = "Mode", Position = 0)]
+        [ValidateSet("soft", "mixed", "hard", "merge", "keep")]
         $Mode = "soft"
     )
     $branch = (git rev-parse --abbrev-ref HEAD)
@@ -275,12 +377,14 @@ function ghrun {
     param ()
 
     $now = [DateTimeOffset]::UtcNow
-    $pages = gh api 'repos/{owner}/{repo}/actions/runs?per_page=100' --paginate --slurp
+    # Filter server-side; paginating every run takes minutes in busy repos
+    $since = $now.AddMinutes(-2).ToString('yyyy-MM-ddTHH:mm:ssZ', [cultureinfo]::InvariantCulture)
+    $response = gh api "repos/{owner}/{repo}/actions/runs?per_page=100&created=%3E%3D$since"
     if ($LASTEXITCODE -ne 0) {
         throw "Failed to list workflow runs with gh."
     }
 
-    $run = $pages | ConvertFrom-Json | ForEach-Object { $_.workflow_runs } |
+    $run = ($response | ConvertFrom-Json).workflow_runs |
     Where-Object {
         $_.run_started_at -and
         [DateTimeOffset]$_.run_started_at -ge $now.AddMinutes(-2) -and
@@ -301,9 +405,15 @@ function ghrun {
     }
 }
 
+# Let a team bypass the repo's "Default branch: ..." rulesets. -Web opens them in the browser instead.
 function ghrule {
-    [CmdletBinding()]
-    param ()
+    [CmdletBinding(SupportsShouldProcess)]
+    param (
+        [string] $Team = 'aks-admins',
+        [ValidateSet('always', 'pull_request', 'exempt')]
+        [string] $BypassMode = 'always',
+        [switch] $Web
+    )
 
     $pages = gh api 'repos/{owner}/{repo}/rulesets?includes_parents=false&per_page=100' --paginate --slurp
     if ($LASTEXITCODE -ne 0) {
@@ -318,45 +428,70 @@ function ghrule {
         return
     }
 
-    $repoUrl = gh repo view --json url --jq .url
-    if ($LASTEXITCODE -ne 0) {
-        throw "Failed to resolve the repository URL with gh."
+    if ($Web) {
+        $repoUrl = gh repo view --json url --jq .url
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to resolve the repository URL with gh."
+        }
+
+        foreach ($ruleset in $rulesets) {
+            Start-Process "$repoUrl/settings/rules/$($ruleset.id)" -ErrorAction Stop
+        }
+        return
     }
 
+    $teamId = gh api "orgs/{owner}/teams/$Team" --jq .id
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to look up team '$Team' in the repository owner's organization."
+    }
+    $teamId = [long]$teamId
+
     foreach ($ruleset in $rulesets) {
-        Start-Process "$repoUrl/settings/rules/$($ruleset.id)" -ErrorAction Stop
+        $full = gh api "repos/{owner}/{repo}/rulesets/$($ruleset.id)" | ConvertFrom-Json
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to read ruleset $($ruleset.id) with gh."
+        }
+
+        $isTeam = { $_.actor_type -eq 'Team' -and $_.actor_id -eq $teamId }
+        $current = @($full.bypass_actors | Where-Object $isTeam)
+        if ($current.Count -and $current[0].bypass_mode -eq $BypassMode) {
+            Write-Host "'$($full.name)': $Team already bypasses ($BypassMode)" -ForegroundColor DarkGray
+            continue
+        }
+
+        $actors = @($full.bypass_actors | Where-Object { -not (& $isTeam) }) +
+        [pscustomobject]@{ actor_id = $teamId; actor_type = 'Team'; bypass_mode = $BypassMode }
+
+        if ($PSCmdlet.ShouldProcess($full.name, "Allow team '$Team' to bypass ($BypassMode)")) {
+            @{ bypass_actors = $actors } | ConvertTo-Json -Depth 5 -Compress |
+            gh api -X PUT "repos/{owner}/{repo}/rulesets/$($ruleset.id)" --input - --silent
+            if ($LASTEXITCODE -ne 0) {
+                throw "Failed to update ruleset '$($full.name)'."
+            }
+            Write-Host "'$($full.name)': $Team can now bypass ($BypassMode)" -ForegroundColor Green
+        }
     }
 }
 
 # Open current repo and branch on Github
 function remote() {
-
     [CmdletBinding()]
     param (
-        [Parameter(Mandatory = $false, ParameterSetName = "Default", Position = 0)]
         [switch] $Repo,
-        [Parameter(Mandatory = $false, ParameterSetName = "Default", Position = 1)]
         [switch] $LastCommit
     )
 
-    $rawurl = git remote get-url --all origin
-
-    if ($rawurl -like "*.git") {
-        $url = $rawurl.Substring(0, $rawurl.lastIndexOf('.'))
-
-    }
-    else {
-        $url = $rawurl
-    }
+    # Normalise SSH remotes (git@host:owner/repo.git, ssh://git@host/...) to https
+    $url = (git remote get-url origin) -replace '^ssh://git@', 'https://' -replace '^git@([^:]+):', 'https://$1/' -replace '\.git$', ''
+    if (-not $url) { return }
 
     $branch = git rev-parse --abbrev-ref HEAD
-    $head = git rev-parse --short HEAD
+    $urls = @()
+    if ($Repo) { $urls += "$url/tree/$branch" }
+    $urls += "$url/commits/$branch"
+    if ($LastCommit) { $urls += "$url/commit/$(git rev-parse HEAD)" }
 
-    if ($Repo) { $1 = "$url/tree/$branch" }
-    $2 = "$url/commits/$branch"
-    if ($LastCommit) { $3 = "$url/commit/$head" }
-
-    Start-Process chrome.exe $1, $2, $3
+    $urls | ForEach-Object { Start-Process $_ }
 }
 
 ## Git branch switching
@@ -369,11 +504,12 @@ New-BashStyleAlias dev "git checkout dev"
 New-BashStyleAlias production "git checkout production"
 New-BashStyleAlias development "git checkout development"
 
-# Others
-New-BashStyleAlias editgit "code %homepath%/.gitconfig" # ~ not working
-New-BashStyleAlias editbash "code %homepath%/.bashrc" 
-New-BashStyleAlias editzsh "code %homepath%/.zshrc"
-New-BashStyleAlias editba "code %homepath%/.bash_aliases"
+# Others ($env:HOME is overridden above, so use USERPROFILE instead of ~)
+New-BashStyleAlias editgit 'code "$env:USERPROFILE\.gitconfig"'
+New-BashStyleAlias editbash 'code "$env:USERPROFILE\.bashrc"'
+New-BashStyleAlias editzsh 'code "$env:USERPROFILE\.zshrc"'
+New-BashStyleAlias editba 'code "$env:USERPROFILE\.bash_aliases"'
+New-BashStyleAlias editprofile 'code $PROFILE.CurrentUserAllHosts'
 New-BashStyleAlias np "cmd.exe /c notepad"
 
 #Testing / remote inspiration
@@ -400,27 +536,31 @@ function dirs {
     }
 }
 
-function cc { 
-    
-    Invoke-History | Set-Clipboard
-
+# Copy the previous command's output ($__) to the clipboard without re-running it
+function cc {
+    ($global:__ | Out-String).Trim() | Set-Clipboard
 }
 
-# Forward docker and docker-compose from WSL to Windows. Which exact index needs to be split may vary based on your distro and even local machine.
-$ifconfig = wsl ifconfig eth0
-$env:DOCKER_HOST = $ifconfig[1].Split(" ")[9]
+# Forward docker and docker-compose to a dockerd running in WSL (no Docker Desktop).
+# Only wired up when there is no native docker CLI and a WSL distro is registered;
+# the WSL IP is resolved on first use instead of on every shell start.
+if ((Get-ChildItem "HKCU:\Software\Microsoft\Windows\CurrentVersion\Lxss" -ErrorAction Ignore) -and
+    -not (Get-Command docker.exe -CommandType Application -ErrorAction Ignore)) {
 
-function dockerd {
-    wsl sudo dockerd -H $env:DOCKER_HOST
+    function Get-WslDockerHost {
+        if (-not $env:DOCKER_HOST) {
+            $ip = "$(wsl hostname -I)".Trim().Split(" ")[0]
+            if (-not $ip) { throw "Could not resolve the WSL IP address." }
+            $env:DOCKER_HOST = "tcp://${ip}:2375"
+        }
+        $env:DOCKER_HOST
+    }
+
+    function dockerd { wsl sudo dockerd -H (Get-WslDockerHost) }
+    function pkill { wsl sudo pkill $args }
+    function docker-compose { wsl docker-compose -H (Get-WslDockerHost) $args }
+    function docker { wsl docker -H (Get-WslDockerHost) $args }
 }
-
-function pkill { wsl sudo pkill $args }
-
-function docker-compose { wsl docker-compose -H $env:DOCKER_HOST $args }
-function docker { wsl docker -H $env:DOCKER_HOST $args }
-
-Set-Alias d docker
-Set-Alias doc docker-compose
 
 function close {
     # Map each PID to its parent in one query, then walk up from this shell
@@ -440,5 +580,3 @@ function close {
     }
     $targets | Stop-Process -Force -ErrorAction SilentlyContinue
 }
-
-$env:PATH = $env:PATH + ";C:\appl"
