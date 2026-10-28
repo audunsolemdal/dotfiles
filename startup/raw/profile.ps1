@@ -353,25 +353,64 @@ function pim {
 
     if (-not $PSCmdlet.ShouldProcess($sub.name, "Activate '$Role' for $Hours h")) { return }
 
-    # Always step up interactively, in a throwaway az config dir: the elevated token never reaches the shared
-    # az cache, so scripts/agents using az cannot reuse it to activate roles without a human doing MFA
-    $challenge = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes(
-        (@{ access_token = @{ acrs = @{ essential = $true; value = $AuthContext } } } | ConvertTo-Json -Depth 3 -Compress)))
-    $saved = $env:AZURE_CONFIG_DIR, $env:AZURE_CORE_LOGIN_EXPERIENCE_V2
-    $tempDir = Join-Path ([IO.Path]::GetTempPath()) "az-pim-$([guid]::NewGuid())"
-    $env:AZURE_CONFIG_DIR = $tempDir
-    $env:AZURE_CORE_LOGIN_EXPERIENCE_V2 = 'off'
+    # Always step up interactively via an OAuth code + PKCE flow in the browser, without az: the elevated token
+    # is never cached anywhere, so scripts/agents using az cannot reuse it to activate roles without a human doing MFA
+    $claimsRequest = @{ access_token = @{ acrs = @{ essential = $true; value = $AuthContext } } } | ConvertTo-Json -Depth 3 -Compress
+    $b64url = { param($bytes) [Convert]::ToBase64String($bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_') }
+    $verifier = & $b64url ([Security.Cryptography.RandomNumberGenerator]::GetBytes(32))
+    $state = [guid]::NewGuid().ToString('N')
+    $tcp = [Net.Sockets.TcpListener]::new([Net.IPAddress]::Loopback, 0); $tcp.Start(); $port = $tcp.LocalEndpoint.Port; $tcp.Stop()
+    $redirect = "http://localhost:$port/"
+    $clientId = '04b07795-8ddb-461a-bbee-02f9e1bf7b46' # Azure CLI public client
+    $authority = "https://login.microsoftonline.com/$($sub.tenantId)/oauth2/v2.0"
+    $scopes = 'https://management.core.windows.net//.default openid'
+    $query = [ordered]@{
+        client_id             = $clientId
+        response_type         = 'code'
+        redirect_uri          = $redirect
+        scope                 = $scopes
+        state                 = $state
+        code_challenge        = & $b64url ([Security.Cryptography.SHA256]::HashData([Text.Encoding]::ASCII.GetBytes($verifier)))
+        code_challenge_method = 'S256'
+        claims                = $claimsRequest
+        login_hint            = $sub.user.name
+    }
+    $authorizeUrl = "$authority/authorize?" + (($query.GetEnumerator() | ForEach-Object { "$($_.Key)=$([uri]::EscapeDataString($_.Value))" }) -join '&')
+
+    $listener = [Net.HttpListener]::new()
+    $listener.Prefixes.Add($redirect)
     try {
-        Write-Host "Step-up sign-in for PIM: complete MFA in the browser..." -ForegroundColor Yellow
-        az login --tenant $sub.tenantId --scope https://management.core.windows.net//.default --claims-challenge $challenge --allow-no-subscriptions --only-show-errors | Out-Null
-        if ($LASTEXITCODE -ne 0) { throw "Step-up sign-in failed or was cancelled." }
-        $stepUp = az account get-access-token --tenant $sub.tenantId --query accessToken -o tsv
-        if ($LASTEXITCODE -ne 0 -or -not $stepUp) { throw "Could not get a token from the step-up sign-in." }
+        $listener.Start()
+        Write-Host "Step-up sign-in for PIM as $($sub.user.name): complete MFA in the browser..." -ForegroundColor Yellow
+        Start-Process $authorizeUrl
+        $pending = $listener.GetContextAsync()
+        $deadline = (Get-Date).AddMinutes(5)
+        while (-not $pending.Wait(500)) {
+            if ((Get-Date) -gt $deadline) { throw "Step-up sign-in timed out." }
+        }
+        $ctx = $pending.Result
+        $reply = [ordered]@{}
+        $ctx.Request.Url.Query.TrimStart('?') -split '&' | Where-Object { $_ } | ForEach-Object {
+            $k, $v = $_ -split '=', 2; $reply[$k] = [uri]::UnescapeDataString("$v".Replace('+', ' '))
+        }
+        $page = [Text.Encoding]::UTF8.GetBytes("<html><body style='font-family:sans-serif'><h3>PIM sign-in $(if ($reply.code) { 'complete' } else { 'failed' }). You can close this tab.</h3></body></html>")
+        $ctx.Response.ContentType = 'text/html'
+        $ctx.Response.OutputStream.Write($page, 0, $page.Length)
+        $ctx.Response.Close()
     }
     finally {
-        $env:AZURE_CONFIG_DIR, $env:AZURE_CORE_LOGIN_EXPERIENCE_V2 = $saved
-        Remove-Item $tempDir -Recurse -Force -ErrorAction Ignore
+        $listener.Close()
     }
+    if ($reply.state -ne $state) { throw "Step-up sign-in returned an unexpected state. Aborting." }
+    if (-not $reply.code) { throw "Step-up sign-in failed: $($reply.error) $($reply.error_description)" }
+    $stepUp = (Invoke-RestMethod -Method Post -Uri "$authority/token" -Body @{
+            client_id     = $clientId
+            grant_type    = 'authorization_code'
+            code          = $reply.code
+            redirect_uri  = $redirect
+            code_verifier = $verifier
+            scope         = $scopes
+        }).access_token
 
     $p = $stepUp.Split('.')[1].Replace('-', '+').Replace('_', '/')
     $stepUpClaims = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($p.PadRight($p.Length + (4 - $p.Length % 4) % 4, '='))) | ConvertFrom-Json
