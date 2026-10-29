@@ -107,6 +107,23 @@ function WingetRun {
 
 # Azure handy
 
+function azp {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory, Position = 0)][ValidateNotNullOrEmpty()][string] $Subscription
+    )
+
+    $accounts = az account list --all -o json
+    if ($LASTEXITCODE -ne 0) { throw "Could not read subscriptions. Run 'az login'." }
+    $matches = @($accounts | ConvertFrom-Json | Where-Object { $_.name -eq $Subscription -or $_.id -eq $Subscription })
+    if ($matches.Count -ne 1) { throw "Expected one subscription matching '$Subscription'; found $($matches.Count). Use a subscription ID if the name is ambiguous." }
+    $sub = $matches[0]
+    if (-not $sub.tenantId -or -not $sub.id) { throw 'Subscription context is missing its tenant or subscription ID.' }
+    $tenant = [uri]::EscapeDataString($sub.tenantId)
+    $id = [uri]::EscapeDataString($sub.id)
+    Start-Process "microsoft-edge:https://portal.azure.com/#@$tenant/resource/subscriptions/$id/resourceGroups"
+}
+
 # Containers
 
 # Resolve the namespace of a deployment (or the namespace itself) matching $Name.
@@ -353,27 +370,57 @@ function pim {
 
     if (-not $PSCmdlet.ShouldProcess($sub.name, "Activate '$Role' for $Hours h")) { return }
 
-    # Always step up interactively via an OAuth code + PKCE flow in the browser, without az: the elevated token
-    # is never cached anywhere, so scripts/agents using az cannot reuse it to activate roles without a human doing MFA
+    $stepUp = Get-PimInteractiveToken -Account $sub -PrincipalId $claims.oid -AuthContext $AuthContext
+    $uri = "$arm$scope/providers/Microsoft.Authorization/roleAssignmentScheduleRequests/$([guid]::NewGuid())?api-version=2020-10-01"
+    try {
+        $res = Invoke-RestMethod -Method Put -Headers @{ Authorization = "Bearer $stepUp" } -Uri $uri -Body $body -ContentType 'application/json'
+    }
+    catch {
+        $err = ($_.ErrorDetails.Message | ConvertFrom-Json -ErrorAction Ignore).error
+        if ($err.code -eq 'RoleAssignmentExists') {
+            Write-Host "'$Role' is already active on $($sub.name)" -ForegroundColor DarkGray
+            return
+        }
+        throw "PIM activation failed: $(if ($err) { "$($err.code): $($err.message)" } else { $_ })"
+    }
+    finally {
+        $stepUp = $null
+    }
+    Write-Host "'$Role' on " -NoNewline
+    Write-Host $sub.name -ForegroundColor Green -NoNewline
+    Write-Host " for $Hours h: $($res.properties.status)" -ForegroundColor Yellow
+}
+
+# Elevated tokens stay in memory and are never added to the Azure CLI token cache.
+function Get-PimInteractiveToken {
+    param (
+        [Parameter(Mandatory)] $Account,
+        [Parameter(Mandatory)][string] $PrincipalId,
+        [string] $AuthContext = 'c1',
+        [string] $ClientId = '04b07795-8ddb-461a-bbee-02f9e1bf7b46',
+        [string] $Scopes = 'https://management.core.windows.net//.default openid profile'
+    )
+
     $claimsRequest = @{ access_token = @{ acrs = @{ essential = $true; value = $AuthContext } } } | ConvertTo-Json -Depth 3 -Compress
     $b64url = { param($bytes) [Convert]::ToBase64String($bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_') }
     $verifier = & $b64url ([Security.Cryptography.RandomNumberGenerator]::GetBytes(32))
     $state = [guid]::NewGuid().ToString('N')
+    $nonce = [guid]::NewGuid().ToString('N')
     $tcp = [Net.Sockets.TcpListener]::new([Net.IPAddress]::Loopback, 0); $tcp.Start(); $port = $tcp.LocalEndpoint.Port; $tcp.Stop()
     $redirect = "http://localhost:$port/"
-    $clientId = '04b07795-8ddb-461a-bbee-02f9e1bf7b46' # Azure CLI public client
-    $authority = "https://login.microsoftonline.com/$($sub.tenantId)/oauth2/v2.0"
-    $scopes = 'https://management.core.windows.net//.default openid'
+    $authority = "https://login.microsoftonline.com/$($Account.tenantId)/oauth2/v2.0"
     $query = [ordered]@{
         client_id             = $clientId
         response_type         = 'code'
         redirect_uri          = $redirect
         scope                 = $scopes
         state                 = $state
+        nonce                 = $nonce
         code_challenge        = & $b64url ([Security.Cryptography.SHA256]::HashData([Text.Encoding]::ASCII.GetBytes($verifier)))
         code_challenge_method = 'S256'
         claims                = $claimsRequest
-        login_hint            = $sub.user.name
+        login_hint            = $Account.user.name
+        prompt                = 'login'
     }
     $authorizeUrl = "$authority/authorize?" + (($query.GetEnumerator() | ForEach-Object { "$($_.Key)=$([uri]::EscapeDataString($_.Value))" }) -join '&')
 
@@ -381,7 +428,7 @@ function pim {
     $listener.Prefixes.Add($redirect)
     try {
         $listener.Start()
-        Write-Host "Step-up sign-in for PIM as $($sub.user.name): complete MFA in the browser..." -ForegroundColor Yellow
+        Write-Host "Step-up sign-in for PIM: complete sign-in and any required MFA in the browser..." -ForegroundColor Yellow
         Start-Process $authorizeUrl
         $pending = $listener.GetContextAsync()
         $deadline = (Get-Date).AddMinutes(5)
@@ -403,45 +450,156 @@ function pim {
     }
     if ($reply.state -ne $state) { throw "Step-up sign-in returned an unexpected state. Aborting." }
     if (-not $reply.code) { throw "Step-up sign-in failed: $($reply.error) $($reply.error_description)" }
-    $stepUp = (Invoke-RestMethod -Method Post -Uri "$authority/token" -Body @{
+    $tokenResponse = Invoke-RestMethod -Method Post -Uri "$authority/token" -ErrorAction Stop -Body @{
             client_id     = $clientId
             grant_type    = 'authorization_code'
             code          = $reply.code
             redirect_uri  = $redirect
             code_verifier = $verifier
             scope         = $scopes
-        }).access_token
-
-    $p = $stepUp.Split('.')[1].Replace('-', '+').Replace('_', '/')
-    $stepUpClaims = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($p.PadRight($p.Length + (4 - $p.Length % 4) % 4, '='))) | ConvertFrom-Json
-    if ($stepUpClaims.oid -ne $claims.oid) {
-        throw "Step-up sign-in used a different account ($($stepUpClaims.upn)). Aborting."
-    }
-
-    $uri = "$arm$scope/providers/Microsoft.Authorization/roleAssignmentScheduleRequests/$([guid]::NewGuid())?api-version=2020-10-01"
-    try {
-        $res = Invoke-RestMethod -Method Put -Headers @{ Authorization = "Bearer $stepUp" } -Uri $uri -Body $body -ContentType 'application/json'
-    }
-    catch {
-        $err = ($_.ErrorDetails.Message | ConvertFrom-Json -ErrorAction Ignore).error
-        if ($err.code -eq 'RoleAssignmentExists') {
-            Write-Host "'$Role' is already active on $($sub.name)" -ForegroundColor DarkGray
-            return
         }
-        throw "PIM activation failed: $(if ($err) { "$($err.code): $($err.message)" } else { $_ })"
+    if (-not $tokenResponse.access_token -or -not $tokenResponse.id_token) { throw 'Sign-in did not return the required tokens.' }
+
+    # Graph access tokens can be opaque; identify the user using the OIDC ID token instead.
+    $p = $tokenResponse.id_token.Split('.')[1].Replace('-', '+').Replace('_', '/')
+    $stepUpClaims = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($p.PadRight($p.Length + (4 - $p.Length % 4) % 4, '='))) | ConvertFrom-Json
+    if ($stepUpClaims.oid -ne $PrincipalId -or $stepUpClaims.tid -ne $Account.tenantId -or
+        $stepUpClaims.aud -ne $ClientId -or $stepUpClaims.nonce -ne $nonce -or
+        $stepUpClaims.exp -le [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()) {
+        throw 'Step-up sign-in returned an unexpected identity or invalid ID token. Aborting.'
     }
-    finally {
-        $stepUp = $null
-    }
-    Write-Host "'$Role' on " -NoNewline
-    Write-Host $sub.name -ForegroundColor Green -NoNewline
-    Write-Host " for $Hours h: $($res.properties.status)" -ForegroundColor Yellow
+    $tokenResponse.access_token
 }
 
-Register-ArgumentCompleter -CommandName pim -ParameterName Subscription -ScriptBlock {
+Register-ArgumentCompleter -CommandName pim, azp -ParameterName Subscription -ScriptBlock {
     param($commandName, $parameterName, $wordToComplete)
     az account list --all --query '[].name' -o tsv 2>$null | Where-Object { $_ -like "$wordToComplete*" } |
     ForEach-Object { if ($_ -match '\s') { "'$_'" } else { $_ } }
+}
+
+function pim-group {
+    [CmdletBinding(SupportsShouldProcess)]
+    param (
+        [Parameter(Mandatory, Position = 0)][guid] $GroupId,
+        [Parameter(Mandatory, Position = 1)][ValidateSet('member', 'owner')][string] $Role,
+        [ValidateRange(1, 24)][int] $Hours = 4,
+        [ValidateNotNullOrEmpty()][string] $Justification = 'Activated via powershell function call',
+        [guid] $TenantId,
+        [string] $AuthContext = 'c1',
+        # Microsoft Graph PowerShell public client; can be overridden with a tenant-approved public client.
+        [guid] $ClientId = '14d82eec-204b-4c2f-b7e8-296a70dab67e'
+    )
+    Invoke-GraphPimActivation -Kind Group @PSBoundParameters
+}
+
+function pim-entra {
+    [CmdletBinding(SupportsShouldProcess)]
+    param (
+        [Parameter(Mandatory, Position = 0)][ValidateNotNullOrEmpty()][string] $Role,
+        [ValidateRange(1, 24)][int] $Hours = 4,
+        [ValidateNotNullOrEmpty()][string] $Justification = 'Activated via powershell function call',
+        [guid] $TenantId,
+        [string] $DirectoryScopeId,
+        [string] $AuthContext = 'c1',
+        [guid] $ClientId = '14d82eec-204b-4c2f-b7e8-296a70dab67e'
+    )
+    Invoke-GraphPimActivation -Kind Entra @PSBoundParameters
+}
+
+function Invoke-GraphPimActivation {
+    [CmdletBinding(SupportsShouldProcess)]
+    param (
+        [ValidateSet('Group', 'Entra')][string] $Kind,
+        [string] $Role,
+        [guid] $GroupId,
+        [int] $Hours = 4,
+        [string] $Justification = 'Activated via powershell function call',
+        [guid] $TenantId,
+        [string] $DirectoryScopeId,
+        [string] $AuthContext = 'c1',
+        [guid] $ClientId = '14d82eec-204b-4c2f-b7e8-296a70dab67e'
+    )
+
+    $accountJson = az account show -o json
+    if ($LASTEXITCODE -ne 0) { throw "Could not read Azure CLI context. Run 'az login'." }
+    $account = $accountJson | ConvertFrom-Json
+    if ($TenantId -and $TenantId -ne [guid]::Empty) { $account.tenantId = $TenantId.ToString() }
+    if (-not $account.tenantId) { throw 'Azure CLI context has no tenant ID.' }
+    $target = if ($Kind -eq 'Group') { "$GroupId ($Role)" } else { "$Role ($($account.tenantId))" }
+    if (-not $PSCmdlet.ShouldProcess($target, "Request PIM activation for $Hours h")) { return }
+
+    # Use az only to identify the signed-in user, never to obtain the elevated Graph token.
+    $identityToken = az account get-access-token --tenant $account.tenantId --query accessToken -o tsv
+    if ($LASTEXITCODE -ne 0 -or -not $identityToken) { throw "Could not identify the user. Run 'az login' for the target tenant." }
+    $payload = $identityToken.Split('.')[1].Replace('-', '+').Replace('_', '/')
+    $identity = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($payload.PadRight($payload.Length + (4 - $payload.Length % 4) % 4, '='))) | ConvertFrom-Json
+    if (-not $identity.oid -or $identity.tid -ne $account.tenantId -or $identity.idtyp -eq 'app') {
+        throw 'PIM self-activation requires a signed-in user in the target tenant.'
+    }
+
+    $graph = 'https://graph.microsoft.com/v1.0'
+    $path, $permissions = if ($Kind -eq 'Group') {
+        'identityGovernance/privilegedAccess/group', 'PrivilegedEligibilitySchedule.Read.AzureADGroup PrivilegedAssignmentSchedule.ReadWrite.AzureADGroup'
+    }
+    else {
+        'roleManagement/directory', 'RoleEligibilitySchedule.Read.Directory RoleAssignmentSchedule.ReadWrite.Directory'
+    }
+    $scopes = (($permissions -split ' ' | ForEach-Object { "https://graph.microsoft.com/$_" }) -join ' ') + ' openid profile'
+    $token = $null
+    $headers = $null
+    try {
+        $token = Get-PimInteractiveToken -Account $account -PrincipalId $identity.oid -AuthContext $AuthContext -ClientId $ClientId -Scopes $scopes
+        $headers = @{ Authorization = "Bearer $token" }
+        $collection = if ($Kind -eq 'Group') { 'eligibilityScheduleInstances' } else { 'roleEligibilityScheduleInstances' }
+        $filter = [uri]::EscapeDataString("principalId eq '$($identity.oid)'")
+        $uri = "$graph/$path/${collection}?`$filter=$filter"
+        if ($Kind -eq 'Entra') { $uri += '&$expand=roleDefinition' }
+        $eligible = @(
+            do {
+                if (-not $uri.StartsWith("$graph/", [StringComparison]::Ordinal)) { throw 'Unexpected Graph pagination URL.' }
+                $page = Invoke-RestMethod -Headers $headers -Uri $uri -ErrorAction Stop
+                $page.value
+                $uri = $page.'@odata.nextLink'
+            } while ($uri)
+        )
+        $matches = @($eligible | Where-Object {
+            $_.principalId -eq $identity.oid -and
+            (($Kind -eq 'Group' -and $_.groupId -eq $GroupId.ToString() -and $_.accessId -eq $Role) -or
+            ($Kind -eq 'Entra' -and ($_.roleDefinition.displayName -eq $Role -or $_.roleDefinitionId -eq $Role) -and
+            (-not $DirectoryScopeId -or $_.directoryScopeId -eq $DirectoryScopeId)))
+        })
+        if ($matches.Count -ne 1) {
+            throw "Expected one eligible assignment for '$Role'; found $($matches.Count). Check the role/group and tenant; use -DirectoryScopeId to disambiguate scoped Entra roles."
+        }
+        $eligibility = $matches[0]
+        $body = @{
+            action = 'selfActivate'
+            principalId = $identity.oid
+            justification = $Justification
+            scheduleInfo = @{
+                startDateTime = [DateTime]::UtcNow.ToString('o')
+                expiration = @{ type = 'afterDuration'; duration = "PT${Hours}H" }
+            }
+        }
+        if ($Kind -eq 'Group') {
+            $body.groupId = $eligibility.groupId
+            $body.accessId = $eligibility.accessId
+            $requests = 'assignmentScheduleRequests'
+        }
+        else {
+            $body.roleDefinitionId = $eligibility.roleDefinitionId
+            if ($eligibility.directoryScopeId) { $body.directoryScopeId = $eligibility.directoryScopeId }
+            elseif ($eligibility.appScopeId) { $body.appScopeId = $eligibility.appScopeId }
+            else { throw 'Eligible Entra role has no scope. Aborting.' }
+            $requests = 'roleAssignmentScheduleRequests'
+        }
+        $result = Invoke-RestMethod -Method Post -Headers $headers -Uri "$graph/$path/$requests" -Body ($body | ConvertTo-Json -Depth 5) -ContentType 'application/json' -ErrorAction Stop
+        Write-Host "PIM request for '$Role' for $Hours h: $($result.status)" -ForegroundColor Yellow
+    }
+    finally {
+        $token = $null
+        $headers = $null
+    }
 }
 
 function gcom() {
