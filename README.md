@@ -39,8 +39,12 @@ ambiguous names, and does not change the active CLI subscription.
 `pim` accepts a PowerShell array of subscription names/IDs, and `pim-group` accepts
 an array of group GUIDs. Use comma-separated arguments (not a single quoted
 comma-separated string), or pass an array variable. Each target gets its own
-activation request and interactive sign-in, with the same role, duration, and
-justification. `-WhatIf` and `-Confirm` apply separately to each target.
+activation request, with the same role, duration, and justification.
+Within one command invocation, targets with the same tenant and signed-in user
+reuse the interactive step-up token. Tokens are held only in a local in-memory
+batch cache, cleared on completion or error, and **never reused by a new call**.
+Different tenants or users require separate sign-ins; tenant policy can still
+require additional MFA. `-WhatIf` and `-Confirm` apply separately to each target.
 A terminating error stops the batch; earlier requests are not rolled back.
 
 `pim-group` and `pim-entra` request **self-activation of existing eligibilities**,
@@ -51,7 +55,7 @@ Entra scope is copied from the eligible assignment, never widened to tenant scop
 Use `-DirectoryScopeId` if the same Entra role is eligible at multiple scopes.
 `-WhatIf` previews without opening sign-in or requesting activation.
 
-Every activation uses an interactive OAuth/PKCE browser sign-in. Elevated tokens
+Every invocation uses an interactive OAuth/PKCE browser sign-in. Elevated tokens
 are held only in memory, not persisted in the CLI cache. The existing `pim`
 authentication context default (`c1`) also applies to the new helpers; override
 `-AuthContext` with the context configured by your tenant's PIM policy.

@@ -316,7 +316,7 @@ function Authenticate-Databricks {
 }
 
 # Activate an eligible PIM role (default MAP Admin Contributor) separately for each subscription.
-# Every activation requires an interactive step-up sign-in (Conditional Access authentication context).
+# Step-up tokens are reused only within this call, never across calls.
 function pim {
     [CmdletBinding(SupportsShouldProcess)]
     param (
@@ -328,9 +328,15 @@ function pim {
     )
 
     $activationParameters = @{} + $PSBoundParameters
-    foreach ($item in $Subscription) {
-        $activationParameters.Subscription = $item
-        Invoke-SubscriptionPimActivation @activationParameters
+    $batchTokens = @{}
+    try {
+        foreach ($item in $Subscription) {
+            $activationParameters.Subscription = $item
+            Invoke-SubscriptionPimActivation @activationParameters -BatchTokens $batchTokens
+        }
+    }
+    finally {
+        $batchTokens.Clear()
     }
 }
 
@@ -342,7 +348,8 @@ function Invoke-SubscriptionPimActivation {
         [ValidateRange(1, 24)][int] $Hours = 4,
         [string] $Justification = 'Activated via powershell function call',
         # Authentication context ID required by the PIM activation policy
-        [string] $AuthContext = 'c1'
+        [string] $AuthContext = 'c1',
+        [hashtable] $BatchTokens = @{}
     )
 
     $sub = az account list --all --query "[?name=='$Subscription' || id=='$Subscription'] | [0]" -o json | ConvertFrom-Json
@@ -387,7 +394,11 @@ function Invoke-SubscriptionPimActivation {
 
     if (-not $PSCmdlet.ShouldProcess($sub.name, "Activate '$Role' for $Hours h")) { return }
 
-    $stepUp = Get-PimInteractiveToken -Account $sub -PrincipalId $claims.oid -AuthContext $AuthContext
+    $tokenKey = @($sub.tenantId, $claims.oid, $AuthContext) | ConvertTo-Json -Compress
+    if (-not $BatchTokens.ContainsKey($tokenKey)) {
+        $BatchTokens[$tokenKey] = Get-PimInteractiveToken -Account $sub -PrincipalId $claims.oid -AuthContext $AuthContext
+    }
+    $stepUp = $BatchTokens[$tokenKey]
     $uri = "$arm$scope/providers/Microsoft.Authorization/roleAssignmentScheduleRequests/$([guid]::NewGuid())?api-version=2020-10-01"
     try {
         $res = Invoke-RestMethod -Method Put -Headers @{ Authorization = "Bearer $stepUp" } -Uri $uri -Body $body -ContentType 'application/json'
@@ -507,9 +518,15 @@ function pim-group {
         [guid] $ClientId = '14d82eec-204b-4c2f-b7e8-296a70dab67e'
     )
     $activationParameters = @{} + $PSBoundParameters
-    foreach ($item in $GroupId) {
-        $activationParameters.GroupId = $item
-        Invoke-GraphPimActivation -Kind Group @activationParameters
+    $batchTokens = @{}
+    try {
+        foreach ($item in $GroupId) {
+            $activationParameters.GroupId = $item
+            Invoke-GraphPimActivation -Kind Group @activationParameters -BatchTokens $batchTokens
+        }
+    }
+    finally {
+        $batchTokens.Clear()
     }
 }
 
@@ -538,7 +555,8 @@ function Invoke-GraphPimActivation {
         [guid] $TenantId,
         [string] $DirectoryScopeId,
         [string] $AuthContext = 'c1',
-        [guid] $ClientId = '14d82eec-204b-4c2f-b7e8-296a70dab67e'
+        [guid] $ClientId = '14d82eec-204b-4c2f-b7e8-296a70dab67e',
+        [hashtable] $BatchTokens = @{}
     )
 
     $accountJson = az account show -o json
@@ -569,7 +587,11 @@ function Invoke-GraphPimActivation {
     $token = $null
     $headers = $null
     try {
-        $token = Get-PimInteractiveToken -Account $account -PrincipalId $identity.oid -AuthContext $AuthContext -ClientId $ClientId -Scopes $scopes
+        $tokenKey = @($account.tenantId, $identity.oid, $AuthContext, $ClientId.ToString(), $scopes) | ConvertTo-Json -Compress
+        if (-not $BatchTokens.ContainsKey($tokenKey)) {
+            $BatchTokens[$tokenKey] = Get-PimInteractiveToken -Account $account -PrincipalId $identity.oid -AuthContext $AuthContext -ClientId $ClientId -Scopes $scopes
+        }
+        $token = $BatchTokens[$tokenKey]
         $headers = @{ Authorization = "Bearer $token" }
         $collection = if ($Kind -eq 'Group') { 'eligibilityScheduleInstances' } else { 'roleEligibilityScheduleInstances' }
         $filter = [uri]::EscapeDataString("principalId eq '$($identity.oid)'")

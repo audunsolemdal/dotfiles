@@ -149,7 +149,7 @@ Describe 'Graph PIM self-activation' {
             }
         }
         Should -Invoke Invoke-RestMethod -Times 2 -Exactly -ParameterFilter { $Method -eq 'Post' }
-        Should -Invoke Get-PimInteractiveToken -Times 2 -Exactly -ParameterFilter {
+        Should -Invoke Get-PimInteractiveToken -Times 1 -Exactly -ParameterFilter {
             $Account.tenantId -eq $tenant -and $ClientId -eq $roleId -and $AuthContext -eq 'c2'
         }
     }
@@ -158,6 +158,13 @@ Describe 'Graph PIM self-activation' {
         pim-group $group,$fixtureSubId owner -WhatIf
         Should -Invoke Get-PimInteractiveToken -Times 0
         Should -Invoke Invoke-RestMethod -Times 0
+    }
+
+    It 'never reuses a group token in a new call, including after failure' {
+        pim-group $group member
+        { pim-group $group owner } | Should -Throw '*found 0*'
+        pim-group $group member
+        Should -Invoke Get-PimInteractiveToken -Times 3 -Exactly
     }
 
     It 'validates every group ID before starting a batch' {
@@ -397,13 +404,45 @@ Describe 'Existing Azure resource PIM' {
             }
         }
         Should -Invoke Invoke-RestMethod -Times 2 -Exactly -ParameterFilter { $Method -eq 'Put' }
-        Should -Invoke Get-PimInteractiveToken -Times 2 -Exactly -ParameterFilter { $AuthContext -eq 'c2' }
+        Should -Invoke Get-PimInteractiveToken -Times 1 -Exactly -ParameterFilter { $AuthContext -eq 'c2' }
     }
 
     It 'does not sign in or activate any subscription under batch WhatIf' {
         pim example-subscription,second-subscription -Role 'Example Contributor' -WhatIf
         Should -Invoke Get-PimInteractiveToken -Times 0
         Should -Invoke Invoke-RestMethod -Times 0 -ParameterFilter { $Method -eq 'Put' }
+    }
+
+    It 'never reuses a subscription token in a new call' {
+        pim example-subscription,second-subscription -Role 'Example Contributor'
+        pim example-subscription,second-subscription -Role 'Example Contributor'
+        Should -Invoke Get-PimInteractiveToken -Times 2 -Exactly
+        Should -Invoke Invoke-RestMethod -Times 4 -Exactly -ParameterFilter { $Method -eq 'Put' }
+    }
+
+    It 'signs in separately when the <ChangedContext> changes within a subscription batch' -ForEach @(
+        @{ ChangedContext = 'tenant' }
+        @{ ChangedContext = 'principal' }
+    ) {
+        $script:changedContext = $ChangedContext
+        $script:lookupCount = 0
+        Mock az {
+            $global:LASTEXITCODE = 0
+            if ($args[1] -eq 'list') {
+                $script:lookupCount++
+                $accountTenant = if ($script:changedContext -eq 'tenant' -and $script:lookupCount -eq 2) { $group } else { $tenant }
+                @{ id = $fixtureSubId; tenantId = $accountTenant; name = "subscription-$script:lookupCount"; user = @{} } | ConvertTo-Json
+            }
+            else {
+                $tokenTenant = if ($script:changedContext -eq 'tenant' -and $script:lookupCount -eq 2) { $group } else { $tenant }
+                $tokenPrincipal = if ($script:changedContext -eq 'principal' -and $script:lookupCount -eq 2) { $roleId } else { $principal }
+                $payload = @{ oid = $tokenPrincipal; tid = $tokenTenant } | ConvertTo-Json -Compress
+                'header.' + [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($payload)) + '.signature'
+            }
+        }
+        pim example-subscription,second-subscription -Role 'Example Contributor'
+        Should -Invoke Get-PimInteractiveToken -Times 2 -Exactly
+        Should -Invoke Invoke-RestMethod -Times 2 -Exactly -ParameterFilter { $Method -eq 'Put' }
     }
 
     It 'continues to the next subscription when a role is already active' {
@@ -415,6 +454,7 @@ Describe 'Existing Azure resource PIM' {
                 $exception.ErrorDetails = [Management.Automation.ErrorDetails]::new('{"error":{"code":"RoleAssignmentExists"}}')
                 throw $exception
             }
+
             @{ value = @(@{ properties = @{
                 scope = '/providers/Microsoft.Management/managementGroups/example'
                 roleDefinitionId = "/providers/Microsoft.Authorization/roleDefinitions/$roleId"
@@ -424,7 +464,7 @@ Describe 'Existing Azure resource PIM' {
         }
         pim example-subscription,second-subscription -Role 'Example Contributor'
         Should -Invoke Invoke-RestMethod -Times 2 -Exactly -ParameterFilter { $Method -eq 'Put' }
-        Should -Invoke Get-PimInteractiveToken -Times 2 -Exactly
+        Should -Invoke Get-PimInteractiveToken -Times 1 -Exactly
     }
 
     It 'stops a subscription batch on an activation failure' {
@@ -432,5 +472,28 @@ Describe 'Existing Azure resource PIM' {
         { pim example-subscription,second-subscription -Role 'Example Contributor' } | Should -Throw '*Sign-in failed*'
         Should -Invoke Get-PimInteractiveToken -Times 1 -Exactly
         Should -Invoke Invoke-RestMethod -Times 0 -ParameterFilter { $Method -eq 'Put' }
+    }
+}
+
+Describe 'PIM batch token lifetime' {
+    It 'clears the <Command> cache on completion and failure' -ForEach @(
+        @{ Command = 'pim'; Helper = 'Invoke-SubscriptionPimActivation'; TargetParameter = 'Subscription'; Target = 'example-subscription' }
+        @{ Command = 'pim-group'; Helper = 'Invoke-GraphPimActivation'; TargetParameter = 'GroupId'; Target = '33333333-3333-4333-8333-333333333333' }
+    ) {
+        $script:failActivation = $false
+        Mock $Helper {
+            $script:capturedCache = $BatchTokens
+            $BatchTokens['test-key'] = 'test-token'
+            if ($script:failActivation) { throw 'Activation failed' }
+        }
+        $parameters = @{ $TargetParameter = $Target; Role = 'member' }
+        & $Command @parameters
+        $script:capturedCache.Count | Should -Be 0
+        $firstCache = $script:capturedCache
+
+        $script:failActivation = $true
+        { & $Command @parameters } | Should -Throw '*Activation failed*'
+        $script:capturedCache.Count | Should -Be 0
+        [object]::ReferenceEquals($firstCache, $script:capturedCache) | Should -BeFalse
     }
 }
