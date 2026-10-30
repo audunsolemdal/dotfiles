@@ -25,13 +25,23 @@ not in this repository.
 ```powershell
 azp 'example-subscription'                  # Exact subscription name or ID; opens resource groups in Edge
 pim 'example-subscription'                  # Existing Azure resource-role activation
+pim t-tstsp1,t-tstsp2                        # Separate activation per subscription
+pim -Subscription $subscriptions            # Or pass a PowerShell array of names/IDs
 pim-group -GroupId $groupId -Role member     # Explicit member or owner; no default role
+pim-group -GroupId $groupId,$otherGroupId -Role member
 pim-entra -Role 'Groups Administrator'       # Exact eligible role name or role-definition ID
 pim-entra -Role $roleId -DirectoryScopeId $scopeId -Hours 2 -Justification 'Planned maintenance'
 ```
 
 `azp` resolves the subscription and tenant from `az account list --all`, refuses
 ambiguous names, and does not change the active CLI subscription.
+
+`pim` accepts a PowerShell array of subscription names/IDs, and `pim-group` accepts
+an array of group GUIDs. Use comma-separated arguments (not a single quoted
+comma-separated string), or pass an array variable. Each target gets its own
+activation request and interactive sign-in, with the same role, duration, and
+justification. `-WhatIf` and `-Confirm` apply separately to each target.
+A terminating error stops the batch; earlier requests are not rolled back.
 
 `pim-group` and `pim-entra` request **self-activation of existing eligibilities**,
 not new privileges. Both default to four hours and the justification

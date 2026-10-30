@@ -315,9 +315,26 @@ function Authenticate-Databricks {
     databricks configure --host https://xxx.azuredatabricks.net --aad-token --jobs-api-version 2.1
 }
 
-# Activate an eligible PIM role (default MAP Admin Contributor) scoped to one subscription.
+# Activate an eligible PIM role (default MAP Admin Contributor) separately for each subscription.
 # Every activation requires an interactive step-up sign-in (Conditional Access authentication context).
 function pim {
+    [CmdletBinding(SupportsShouldProcess)]
+    param (
+        [Parameter(Mandatory, Position = 0)][ValidateNotNullOrEmpty()][string[]] $Subscription,
+        [string] $Role = 'MAP Admin Contributor',
+        [ValidateRange(1, 24)][int] $Hours = 4,
+        [string] $Justification = 'Activated via powershell function call',
+        [string] $AuthContext = 'c1'
+    )
+
+    $activationParameters = @{} + $PSBoundParameters
+    foreach ($item in $Subscription) {
+        $activationParameters.Subscription = $item
+        Invoke-SubscriptionPimActivation @activationParameters
+    }
+}
+
+function Invoke-SubscriptionPimActivation {
     [CmdletBinding(SupportsShouldProcess)]
     param (
         [Parameter(Mandatory, Position = 0)][string] $Subscription,
@@ -480,7 +497,7 @@ Register-ArgumentCompleter -CommandName pim, azp -ParameterName Subscription -Sc
 function pim-group {
     [CmdletBinding(SupportsShouldProcess)]
     param (
-        [Parameter(Mandatory, Position = 0)][guid] $GroupId,
+        [Parameter(Mandatory, Position = 0)][ValidateNotNullOrEmpty()][guid[]] $GroupId,
         [Parameter(Mandatory, Position = 1)][ValidateSet('member', 'owner')][string] $Role,
         [ValidateRange(1, 24)][int] $Hours = 4,
         [ValidateNotNullOrEmpty()][string] $Justification = 'Activated via powershell function call',
@@ -489,7 +506,11 @@ function pim-group {
         # Microsoft Graph PowerShell public client; can be overridden with a tenant-approved public client.
         [guid] $ClientId = '14d82eec-204b-4c2f-b7e8-296a70dab67e'
     )
-    Invoke-GraphPimActivation -Kind Group @PSBoundParameters
+    $activationParameters = @{} + $PSBoundParameters
+    foreach ($item in $GroupId) {
+        $activationParameters.GroupId = $item
+        Invoke-GraphPimActivation -Kind Group @activationParameters
+    }
 }
 
 function pim-entra {

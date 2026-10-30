@@ -126,6 +126,52 @@ Describe 'Graph PIM self-activation' {
         }
     }
 
+    It 'activates each group separately using <InputForm>' -ForEach @(
+        @{ InputForm = 'comma-separated arguments' }
+        @{ InputForm = 'an array variable' }
+    ) {
+        $script:assignments += $script:assignments[0].PSObject.Copy()
+        $script:assignments[1].groupId = $fixtureSubId
+        if ($InputForm -eq 'comma-separated arguments') {
+            pim-group $group,$fixtureSubId member -Hours 2 -Justification 'Batch maintenance' -TenantId $tenant -ClientId $roleId -AuthContext c2
+        }
+        else {
+            $groups = @($group, $fixtureSubId)
+            pim-group -GroupId $groups -Role member -Hours 2 -Justification 'Batch maintenance' -TenantId $tenant -ClientId $roleId -AuthContext c2
+        }
+        foreach ($expectedGroup in $group, $fixtureSubId) {
+            Should -Invoke Invoke-RestMethod -Times 1 -Exactly -ParameterFilter {
+                if ($Method -ne 'Post') { return $false }
+                $request = $Body | ConvertFrom-Json
+                $request.groupId -eq $expectedGroup -and $request.accessId -eq 'member' -and
+                $request.scheduleInfo.expiration.duration -eq 'PT2H' -and
+                $request.justification -eq 'Batch maintenance'
+            }
+        }
+        Should -Invoke Invoke-RestMethod -Times 2 -Exactly -ParameterFilter { $Method -eq 'Post' }
+        Should -Invoke Get-PimInteractiveToken -Times 2 -Exactly -ParameterFilter {
+            $Account.tenantId -eq $tenant -and $ClientId -eq $roleId -and $AuthContext -eq 'c2'
+        }
+    }
+
+    It 'does not sign in or activate any group under batch WhatIf' {
+        pim-group $group,$fixtureSubId owner -WhatIf
+        Should -Invoke Get-PimInteractiveToken -Times 0
+        Should -Invoke Invoke-RestMethod -Times 0
+    }
+
+    It 'validates every group ID before starting a batch' {
+        { pim-group $group,'not-a-guid' member } | Should -Throw
+        Should -Invoke Get-PimInteractiveToken -Times 0
+        Should -Invoke Invoke-RestMethod -Times 0
+    }
+
+    It 'stops a group batch on an activation failure' {
+        Mock Invoke-RestMethod { throw 'Policy or consent denied' }
+        { pim-group $group,$fixtureSubId member } | Should -Throw '*Policy or consent denied*'
+        Should -Invoke Get-PimInteractiveToken -Times 1 -Exactly
+    }
+
     It 'preserves the Entra eligibility scope and supplied duration and reason' {
         pim-entra 'Groups Administrator' -Hours 2 -Justification 'Planned maintenance'
         Should -Invoke Invoke-RestMethod -Times 1 -Exactly -ParameterFilter {
@@ -314,6 +360,77 @@ Describe 'Existing Azure resource PIM' {
     It 'does not sign in or activate under WhatIf' {
         pim 'example-subscription' -Role 'Example Contributor' -WhatIf
         Should -Invoke Get-PimInteractiveToken -Times 0
+        Should -Invoke Invoke-RestMethod -Times 0 -ParameterFilter { $Method -eq 'Put' }
+    }
+
+    It 'activates each subscription separately using <InputForm>' -ForEach @(
+        @{ InputForm = 'comma-separated arguments' }
+        @{ InputForm = 'an array variable' }
+    ) {
+        Mock az {
+            $global:LASTEXITCODE = 0
+            if ($args[1] -eq 'list') {
+                if (($args -join ' ') -like '*second-subscription*') {
+                    @{ id = $group; tenantId = $tenant; name = 'second-subscription'; user = @{} } | ConvertTo-Json
+                }
+                else {
+                    @{ id = $fixtureSubId; tenantId = $tenant; name = 'example-subscription'; user = @{} } | ConvertTo-Json
+                }
+            }
+            else { $fakeToken }
+        }
+        if ($InputForm -eq 'comma-separated arguments') {
+            pim example-subscription,second-subscription -Role 'Example Contributor' -Hours 2 -Justification 'Batch maintenance' -AuthContext c2
+        }
+        else {
+            $subscriptions = @('example-subscription', 'second-subscription')
+            pim -Subscription $subscriptions -Role 'Example Contributor' -Hours 2 -Justification 'Batch maintenance' -AuthContext c2
+        }
+        foreach ($expectedSub in $fixtureSubId, $group) {
+            Should -Invoke Invoke-RestMethod -Times 1 -Exactly -ParameterFilter {
+                if ($Method -ne 'Put') { return $false }
+                $properties = ($Body | ConvertFrom-Json).properties
+                $Uri -like "*/subscriptions/$expectedSub/providers/Microsoft.Authorization/roleAssignmentScheduleRequests/*" -and
+                $properties.roleDefinitionId -eq "/subscriptions/$expectedSub/providers/Microsoft.Authorization/roleDefinitions/$roleId" -and
+                $properties.scheduleInfo.expiration.duration -eq 'PT2H' -and
+                $properties.justification -eq 'Batch maintenance'
+            }
+        }
+        Should -Invoke Invoke-RestMethod -Times 2 -Exactly -ParameterFilter { $Method -eq 'Put' }
+        Should -Invoke Get-PimInteractiveToken -Times 2 -Exactly -ParameterFilter { $AuthContext -eq 'c2' }
+    }
+
+    It 'does not sign in or activate any subscription under batch WhatIf' {
+        pim example-subscription,second-subscription -Role 'Example Contributor' -WhatIf
+        Should -Invoke Get-PimInteractiveToken -Times 0
+        Should -Invoke Invoke-RestMethod -Times 0 -ParameterFilter { $Method -eq 'Put' }
+    }
+
+    It 'continues to the next subscription when a role is already active' {
+        Mock Invoke-RestMethod {
+            if ($Method -eq 'Put') {
+                $exception = [Management.Automation.ErrorRecord]::new(
+                    [Exception]::new('Already active'), 'RoleAssignmentExists',
+                    [Management.Automation.ErrorCategory]::InvalidOperation, $null)
+                $exception.ErrorDetails = [Management.Automation.ErrorDetails]::new('{"error":{"code":"RoleAssignmentExists"}}')
+                throw $exception
+            }
+            @{ value = @(@{ properties = @{
+                scope = '/providers/Microsoft.Management/managementGroups/example'
+                roleDefinitionId = "/providers/Microsoft.Authorization/roleDefinitions/$roleId"
+                roleEligibilityScheduleId = 'example-eligibility'
+                expandedProperties = @{ roleDefinition = @{ displayName = 'Example Contributor' } }
+            } }) }
+        }
+        pim example-subscription,second-subscription -Role 'Example Contributor'
+        Should -Invoke Invoke-RestMethod -Times 2 -Exactly -ParameterFilter { $Method -eq 'Put' }
+        Should -Invoke Get-PimInteractiveToken -Times 2 -Exactly
+    }
+
+    It 'stops a subscription batch on an activation failure' {
+        Mock Get-PimInteractiveToken { throw 'Sign-in failed' }
+        { pim example-subscription,second-subscription -Role 'Example Contributor' } | Should -Throw '*Sign-in failed*'
+        Should -Invoke Get-PimInteractiveToken -Times 1 -Exactly
         Should -Invoke Invoke-RestMethod -Times 0 -ParameterFilter { $Method -eq 'Put' }
     }
 }
